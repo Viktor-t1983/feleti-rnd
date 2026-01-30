@@ -1,0 +1,10 @@
+﻿{
+  "name": "feleti-rnd",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "echo 'Run from app folders'",
+    "setup": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1"
+  }
+}
