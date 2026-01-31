@@ -1,0 +1,28 @@
+{
+  "roo-cline.mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "D:\\\\Projects\\\\feleti-rnd"]
+    },
+    "sqlite": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "D:\\\\Projects\\\\feleti-rnd\\\\apps\\\\api\\\\prisma\\\\dev.db"]
+    }
+  },
+  "roo-cline.customInstructions": [
+    "Проект: FELETI R&D Assistant 2.0",
+    "Структура: Turborepo monorepo",
+    "Frontend: React 18 + TypeScript + Vite + shadcn/ui",
+    "Backend: Fastify 4 + Prisma ORM + Zod",
+    "Database: SQLite (dev)  PostgreSQL (prod)",
+    "Python: FastAPI + NumPy + SciPy",
+    "TypeScript strict mode",
+    "Все пути на диске D:\\Projects\\feleti-rnd"
+  ],
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.python"
+  },
+  "git.autofetch": true
+}

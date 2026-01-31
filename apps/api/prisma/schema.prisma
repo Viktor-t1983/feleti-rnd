@@ -1,0 +1,240 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  username      String    @unique
+  passwordHash  String
+  fullName      String
+  roleId        String
+  role          Role      @relation(fields: [roleId], references: [id])
+  telegramId    String?   @unique
+  preferences   Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      UserSession[]
+  ownedProjects Project[] @relation("ProjectOwner")
+  assignedTasks Task[]    @relation("TaskAssignee")
+  comments      Comment[]
+  auditLogs     AuditLog[]
+  authoredLessons LessonLearned[]
+  authoredVocs  VoiceOfCustomer[]
+
+  @@index([email])
+  @@index([roleId])
+}
+
+model Role {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  description  String?
+  permissions  Json
+  isSystem     Boolean  @default(false)
+  users        User[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model UserSession {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Project {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  name            String
+  description     String?
+  stage           String    @default("concept")
+  status          String    @default("active")
+  priority        String    @default("medium")
+  ownerId         String
+  owner           User      @relation("ProjectOwner", fields: [ownerId], references: [id])
+  startDate       DateTime?
+  endDate         DateTime?
+  budget          Float?
+  actualCost      Float     @default(0)
+  scores          Json?
+  financials      Financial[]
+  competitorLinks CompetitorProject[]
+  documents       Document[]
+  tasks           Task[]
+  comments        Comment[]
+  lessonsLearned  LessonLearned[]
+  vocs            VoiceOfCustomer[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([code])
+  @@index([ownerId])
+  @@index([stage])
+  @@index([status])
+}
+
+model Financial {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  year        Int
+  revenue     Float
+  cost        Float
+  profit      Float
+  npv         Float?
+  irr         Float?
+  payback     Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, year])
+  @@index([projectId])
+}
+
+model Competitor {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  website     String?
+  strengths   Json
+  weaknesses  Json
+  projectLinks CompetitorProject[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CompetitorProject {
+  id            String   @id @default(uuid())
+  projectId     String
+  competitorId  String
+  project       Project  @relation(fields: [projectId], references: [id])
+  competitor    Competitor @relation(fields: [competitorId], references: [id])
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@unique([projectId, competitorId])
+  @@index([projectId])
+  @@index([competitorId])
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  url         String
+  uploadedBy  String
+  uploadedAt  DateTime @default(now())
+  metadata    Json?
+
+  @@index([projectId])
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      String   @default("todo")
+  priority    String   @default("medium")
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
+  assigneeId  String?
+  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  dueDate     DateTime?
+  completedAt DateTime?
+  comments    Comment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([status])
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  content     String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Comment? @relation("CommentReply", fields: [parentId], references: [id])
+  replies     Comment[] @relation("CommentReply")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([taskId])
+}
+
+model LessonLearned {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  category    String
+  impact      String
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([category])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  changes   Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+model VoiceOfCustomer {
+  id          String   @id @default(uuid())
+  source      String
+  customer    String
+  feedback    String
+  category    String
+  sentiment   String
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  priority    String   @default("medium")
+  status      String   @default("new")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([category])
+  @@index([status])
+}

@@ -1,10 +1,20 @@
-﻿{
+{
   "name": "feleti-rnd",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "description": "FELETI R&D Assistant 2.0",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "echo 'Run from app folders'",
-    "setup": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1"
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:calc\"",
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:calc": "cd apps/calc-engine && .\\venv\\Scripts\\activate && uvicorn app.main:app --reload --port 8000",
+    "build": "npm run build --workspaces",
+    "clean": "rimraf node_modules apps/*/node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }
