@@ -5,9 +5,9 @@ import { CommentsService } from './comments.service';
 const commentsService = new CommentsService();
 
 export async function commentsRoutes(fastify: FastifyInstance) {
-  // GET /api/projects/:projectId/comments
+  // GET /projects/:projectId/comments
   fastify.get(
-    '/api/projects/:projectId/comments',
+    '/projects/:projectId/comments',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { projectId } = request.params as {
@@ -20,9 +20,9 @@ export async function commentsRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // POST /api/projects/:projectId/comments
+  // POST /projects/:projectId/comments
   fastify.post(
-    '/api/projects/:projectId/comments',
+    '/projects/:projectId/comments',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { projectId } = request.params as {
@@ -41,9 +41,9 @@ export async function commentsRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // DELETE /api/projects/:projectId/comments/:commentId
+  // DELETE /projects/:projectId/comments/:commentId
   fastify.delete(
-    '/api/projects/:projectId/comments/:commentId',
+    '/projects/:projectId/comments/:commentId',
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { commentId } = request.params as {

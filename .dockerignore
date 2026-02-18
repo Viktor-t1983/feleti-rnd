@@ -20,4 +20,3 @@ apps/api/dist
 apps/api/coverage
 apps/web/node_modules
 apps/web/coverage
-apps/calc-engine

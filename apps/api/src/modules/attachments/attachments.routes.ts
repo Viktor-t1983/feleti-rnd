@@ -17,9 +17,9 @@ export async function attachmentsRoutes(fastify: FastifyInstance) {
     },
   });
 
-  // POST /api/projects/:projectId/attachments
+  // POST /projects/:projectId/attachments
   fastify.post(
-    '/api/projects/:projectId/attachments',
+    '/projects/:projectId/attachments',
     { preHandler: [fastify.authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const { projectId } = request.params as {
@@ -67,9 +67,9 @@ export async function attachmentsRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // GET /api/projects/:projectId/attachments
+  // GET /projects/:projectId/attachments
   fastify.get(
-    '/api/projects/:projectId/attachments',
+    '/projects/:projectId/attachments',
     { preHandler: [fastify.authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const { projectId } = request.params as {
@@ -105,9 +105,9 @@ export async function attachmentsRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // GET /api/attachments/:id/download
+  // GET /attachments/:id/download
   fastify.get(
-    '/api/attachments/:id/download',
+    '/attachments/:id/download',
     { preHandler: [fastify.authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const { id } = request.params as { id: string };
@@ -164,9 +164,9 @@ export async function attachmentsRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // DELETE /api/attachments/:id
+  // DELETE /attachments/:id
   fastify.delete(
-    '/api/attachments/:id',
+    '/attachments/:id',
     { preHandler: [fastify.authenticate] },
     async (request: AuthenticatedRequest, reply) => {
       const { id } = request.params as { id: string };
