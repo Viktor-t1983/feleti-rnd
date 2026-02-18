@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FELETI R&D - Нет соединения</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        background: #0f172a;
+        color: #f1f5f9;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 20px;
+      }
+      .container {
+        max-width: 400px;
+      }
+      .icon {
+        font-size: 80px;
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: #3b82f6;
+        margin-bottom: 8px;
+      }
+      h2 {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #e2e8f0;
+      }
+      p {
+        color: #94a3b8;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 32px;
+      }
+      .btn {
+        display: inline-block;
+        padding: 14px 32px;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s;
+      }
+      .btn:hover {
+        background: #2563eb;
+      }
+      .status {
+        margin-top: 24px;
+        font-size: 13px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">📡</div>
+      <h1>FELETI R&D</h1>
+      <h2>Нет подключения к сети</h2>
+      <p>
+        Проверьте интернет-соединение и попробуйте снова. Некоторые данные могут быть доступны из
+        кэша.
+      </p>
+      <button class="btn" onclick="retry()">🔄 Попробовать снова</button>
+      <p class="status" id="status">Проверяем соединение...</p>
+    </div>
+
+    <script>
+      function retry() {
+        window.location.href = '/';
+      }
+
+      // Автоперезагрузка при восстановлении
+      window.addEventListener('online', () => {
+        document.getElementById('status').textContent = '✅ Соединение восстановлено!';
+        setTimeout(() => (window.location.href = '/'), 1000);
+      });
+
+      window.addEventListener('offline', () => {
+        document.getElementById('status').textContent = '❌ Нет соединения';
+      });
+
+      // Начальный статус
+      document.getElementById('status').textContent = navigator.onLine
+        ? '✅ Соединение есть - обновляем...'
+        : '❌ Нет соединения';
+
+      if (navigator.onLine) {
+        setTimeout(() => (window.location.href = '/'), 500);
+      }
+    </script>
+  </body>
+</html>

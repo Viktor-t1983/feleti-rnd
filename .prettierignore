@@ -1,0 +1,17 @@
+# Prettier Ignore Rules
+
+node_modules
+dist
+build
+coverage
+.next
+.turbo
+*.min.js
+*.min.css
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+apps/api/prisma/migrations
+apps/web/dist
+apps/web/.vite
+apps/api/dist

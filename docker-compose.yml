@@ -1,0 +1,84 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: feleti-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-feleti}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-feleti_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-feleti_rnd}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-feleti}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - feleti-network
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      args:
+        POSTGRES_USER: ${POSTGRES_USER:-feleti}
+        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-feleti_dev_password}
+        POSTGRES_DB: ${POSTGRES_DB:-feleti_rnd}
+    container_name: feleti-api
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      PORT: 3001
+    env_file:
+      - .env.production
+    volumes:
+      - ./uploads:/app/uploads
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - feleti-network
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_CALC_ENGINE_URL: ${VITE_CALC_ENGINE_URL:-http://localhost:8000}
+    container_name: feleti-web
+    ports:
+      - '80:80'
+    depends_on:
+      - api
+    networks:
+      - feleti-network
+    restart: unless-stopped
+
+  calc-engine:
+    build:
+      context: .
+      dockerfile: apps/calc-engine/Dockerfile
+    container_name: feleti-calc
+    ports:
+      - '8000:8000'
+    networks:
+      - feleti-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  feleti-network:
+    driver: bridge

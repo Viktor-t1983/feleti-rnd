@@ -1,0 +1,540 @@
+# FELETI R&D Assistant 2.0 - AI Development Rules
+# Версия: 3.2 | Дата: 2026-02-11
+# Для: Roo Cood, Cursor AI, Cline, GitHub Copilot
+
+## 🎯 MISSION CRITICAL
+
+**Ты - senior full-stack разработчик в enterprise проекте.**
+
+Каждый код который ты пишешь должен быть:
+1. 🔒 **Secure** - защищён от атак
+2. 🧪 **Tested** - покрыт тестами (90%+)
+3. 📘 **Typed** - строгая типизация
+4. 📱 **Mobile-first** - адаптивный дизайн
+5. 🚀 **Performant** - быстрый (<300ms)
+6. ✅ **Browser-verified** - проверен в реальном браузере
+
+---
+
+## 🏗️ PROJECT CONTEXT
+
+**Проект:** Enterprise R&D Management System для производителя мясоперерабатывающего оборудования
+
+**Масштаб:**
+- 500+ одновременных пользователей
+- Критичные финансовые данные
+- Интеллектуальная собственность
+- Мультиязычность (RU/EN)
+
+**Tech Stack:**
+- **Backend:** Fastify 5 + Prisma + TypeScript 5 (strict)
+- **Frontend:** React 18.3 + Vite 6 + TypeScript strict + Tailwind CSS + shadcn/ui
+- **Calc Engine:** Python 3.11+ FastAPI
+- **Database:** PostgreSQL (prod) / SQLite (dev)
+- **Testing:** Vitest + Testing Library + Supertest + Playwright + Pytest
+- **DevOps:** Docker + Docker Compose + GitHub Actions
+
+**Project Location:** D:\Projects\feleti-rnd (Windows)
+
+---
+
+## 🔄 MANDATORY WORKFLOW
+
+КРИТИЧЕСКИ ВАЖНО! Следуй этому workflow для КАЖДОЙ задачи без исключений!
+
+### **ШАГ 1: ПОНЯТЬ ЗАДАЧУ** ✅
+- Прочитай промпт полностью
+- Задай уточняющие вопросы если неясно
+- Проверь существующий код на похожие паттерны
+- Определи какие файлы нужно создать/изменить
+
+### **ШАГ 2: НАПИСАТЬ ТЕСТЫ ПЕРВЫМИ (TDD)** ✅
+- Создай файл __tests__/feature.test.ts
+- Напиши тесты для всех сценариев (happy path, edge cases, errors)
+- Запусти: `npm run test` - тесты должны FAIL (red phase)
+
+### **ШАГ 3: НАПИСАТЬ КОД** ✅
+- Реализуй код чтобы пройти тесты
+- TypeScript strict, NO `any`!
+- Error handling обязателен
+- JSDoc для публичных методов
+
+### **ШАГ 4: ЗАПУСТИТЬ ТЕСТЫ** ✅
+```bash
+npm run test --workspace=apps/api   # Backend
+npm run test --workspace=apps/web   # Frontend
+cd apps/calc-engine && pytest       # Python
+```
+Если FAIL - исправь и повтори. НЕ продолжай пока не пройдут!
+
+### **ШАГ 5: ПРОВЕРИТЬ КАЧЕСТВО** ✅
+```bash
+npm run lint
+npm run format
+npm run build --workspace=apps/api
+npm run build --workspace=apps/web
+npm run test:coverage
+```
+
+### **ШАГ 6: ЗАПУСТИТЬ СЕРВИСЫ И ПРОВЕРИТЬ В БРАУЗЕРЕ** ⭐ КРИТИЧНО!
+
+**ОБЯЗАТЕЛЬНО после написания кода:**
+
+1. **Запусти сервисы:**
+```bash
+# Terminal 1 - API
+cd D:\Projects\feleti-rnd\apps\api
+npm run dev
+
+# Terminal 2 - Frontend
+cd D:\Projects\feleti-rnd\apps\web
+npm run dev
+
+# Terminal 3 - Calc Engine (если нужен)
+cd D:\Projects\feleti-rnd\apps\calc-engine
+.\venv\Scripts\activate
+uvicorn app.main:app --reload --port 8000
+```
+
+2. **Подожди 5-10 секунд** пока стартуют
+
+3. **Открой браузер (Windows PowerShell):**
+```powershell
+Start-Process "http://localhost:5173"         # Frontend
+Start-Process "http://localhost:3001/health"  # API
+Start-Process "http://localhost:3001/docs"    # Swagger
+```
+
+4. **Проверь Console на ошибки:**
+- F12 → Console
+- Должно быть 0 errors, 0 warnings
+- Проверь Network tab (все 200 OK)
+
+5. **Протестируй функционал вручную:**
+- Если форма → заполни и отправь
+- Если таблица → проверь данные
+- Если график → проверь рендер
+- Mobile: 320px, 768px, 1024px
+
+**ЕСЛИ ЕСТЬ ОШИБКИ В CONSOLE:**
+```
+❌ Задача НЕ выполнена!
+✅ Исправь ошибки
+✅ Перезапусти
+✅ Повтори проверку
+```
+
+### **ШАГ 7: E2E ТЕСТЫ (для критичного функционала)** ⭐
+
+Для auth, payments, data submission создай E2E:
+
+```typescript
+// apps/web/e2e/auth.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('user can login', async ({ page }) => {
+  await page.goto('http://localhost:5173/login');
+  await page.fill('input[name="email"]', 'admin@feleti.com');
+  await page.fill('input[name="password"]', 'admin123');
+  await page.click('button[type="submit"]');
+  await expect(page).toHaveURL(/dashboard/);
+
+  // Check no console errors
+  const errors = [];
+  page.on('console', msg => {
+    if (msg.type() === 'error') errors.push(msg.text());
+  });
+  expect(errors).toHaveLength(0);
+});
+```
+
+Запусти: `npx playwright test`
+
+### **ШАГ 8: ОБНОВИТЬ ДОКУМЕНТАЦИЮ** ✅
+- Swagger schemas (backend)
+- JSDoc комментарии
+- README.md (если новая фича)
+- Screenshots в docs/ (если UI)
+
+### **ШАГ 9: ФИНАЛЬНАЯ ПРОВЕРКА** ✅
+```
+✅ Тесты проходят
+✅ Линтер проходит
+✅ TypeScript компилируется
+✅ Сервисы без ошибок
+✅ Browser console чистая
+✅ E2E тесты OK (если есть)
+✅ Mobile responsive
+✅ No console.log
+```
+
+### **ШАГ 10: ПОКАЗАТЬ РЕЗУЛЬТАТ** ✅
+
+```markdown
+## ✅ Задача выполнена: [Feature Name]
+
+### Созданные файлы:
+- список файлов
+
+### Результаты тестов:
+✅ Unit: X/X passed
+✅ E2E: X/X passed
+✅ Coverage: X%
+
+### Browser Verification:
+✅ Frontend: http://localhost:5173 - CLEAN
+✅ Console: 0 errors
+✅ Network: All 200 OK
+✅ Mobile: 320px/768px/1024px ✓
+
+### Screenshots:
+[прикрепить если UI изменился]
+
+### Следующий шаг:
+[что делать дальше]
+```
+
+---
+
+## 🐳 DOCKER COMMANDS
+
+```bash
+# Запуск
+docker-compose up -d
+
+# Логи
+docker-compose logs -f
+docker-compose logs -f api
+
+# Остановка
+docker-compose down
+
+# Rebuild
+docker-compose up -d --build
+
+# В контейнер
+docker-compose exec api sh
+
+# Prisma в Docker
+docker-compose exec api npx prisma migrate dev
+docker-compose exec api npx prisma studio
+```
+
+---
+
+## 🔒 SECURITY CHECKLIST
+
+Перед каждым коммитом проверь:
+
+```
+✅ Пароли НЕ возвращаются в API responses
+✅ Пароли хэшируются bcrypt (12 rounds)
+✅ JWT токены с expiration
+✅ Zod validation на всех inputs
+✅ RBAC проверки (только owner/admin)
+✅ Rate limiting на auth endpoints
+✅ CORS настроен правильно
+✅ Helmet security headers
+✅ File upload валидация (type + size)
+✅ No SQL injection (используй Prisma)
+```
+
+---
+
+## 🧪 TESTING QUICK REFERENCE
+
+```bash
+# Unit tests
+npm run test
+npm run test:watch
+npm run test:coverage
+
+# E2E tests
+npx playwright test
+npx playwright test --headed
+npx playwright test --debug
+
+# Python tests
+cd apps/calc-engine
+pytest
+pytest --cov=app
+```
+
+**Coverage требования:**
+- Backend: 90%+
+- Frontend: 80%+
+- Python: 90%+
+
+---
+
+## 📱 MOBILE-FIRST CSS
+
+ВСЕГДА начинай с 320px!
+
+```tsx
+// ✅ CORRECT
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+  {/* Mobile: 1 col, Tablet: 2 cols, Desktop: 3 cols */}
+</div>
+
+<button className="w-full md:w-auto px-4 py-2">
+  {/* Mobile: full width, Desktop: auto */}
+</button>
+
+// ❌ WRONG
+<div className="grid grid-cols-3">
+  {/* Breaks on mobile! */}
+</div>
+```
+
+---
+
+## 🚫 NEVER DO THIS
+
+```typescript
+// ❌ Return password
+return user; // contains password field!
+
+// ❌ Use any
+function process(data: any) { }
+
+// ❌ No validation
+prisma.project.create({ data: req.body });
+
+// ❌ No authorization
+async function deleteProject(id) {
+  await prisma.project.delete({ where: { id } });
+}
+
+// ❌ Ignore errors
+try { ... } catch (e) { }
+
+// ❌ No error handling
+const project = await prisma.project.findUnique(...);
+console.log(project.name); // Can be null!
+
+// ❌ console.log in production
+console.log('Debug:', data);
+
+// ❌ Commit without tests
+git commit -m "add feature" # NO TESTS!
+```
+
+---
+
+## ✅ ALWAYS DO THIS
+
+```typescript
+// ✅ Exclude password
+select: {
+  id: true,
+  email: true,
+  // password: false
+}
+
+// ✅ Strong types
+interface CreateInput {
+  name: string;
+  email: string;
+}
+
+// ✅ Validate with Zod
+const validated = schema.parse(req.body);
+
+// ✅ Check authorization
+if (project.creatorId !== userId && role !== 'Admin') {
+  throw new AuthorizationError();
+}
+
+// ✅ Handle errors
+try {
+  ...
+} catch (error) {
+  logger.error(error);
+  throw new AppError();
+}
+
+// ✅ Check null
+if (!project) {
+  throw new NotFoundError();
+}
+
+// ✅ Remove debug logs
+// logger.debug() only!
+
+// ✅ Tests first (TDD)
+# Write tests → Run (FAIL) → Write code → Run (PASS) → Commit
+```
+
+---
+
+## 📊 PERFORMANCE TARGETS
+
+- ✅ API response: < 300ms
+- ✅ Page load: < 2s
+- ✅ First paint: < 1.5s
+- ✅ Database queries: < 100ms
+- ✅ Use pagination (limit 20)
+- ✅ Lazy load routes
+- ✅ Memoize calculations
+- ✅ Debounce search (500ms)
+
+---
+
+## 🎯 DEFINITION OF DONE
+
+Задача выполнена ТОЛЬКО когда все ✅:
+
+```
+✅ Тесты написаны ПЕРВЫМИ
+✅ Unit тесты PASS
+✅ E2E тесты PASS (критичные)
+✅ Coverage >= 90% (backend) / 80% (frontend)
+✅ ESLint pass
+✅ Prettier formatted
+✅ TypeScript compiles
+✅ Сервисы running без ошибок
+✅ Browser opened & tested
+✅ Console CLEAN (0 errors)
+✅ Network all 200 OK
+✅ Mobile responsive (320/768/1024)
+✅ No console.log
+✅ Swagger updated
+✅ JSDoc added
+✅ Security checklist ✓
+✅ Performance < 300ms
+✅ Accessibility ✓
+✅ Screenshots made (UI changes)
+✅ Commit message correct
+```
+
+---
+
+## 🔄 GIT WORKFLOW
+
+```bash
+# Commit format
+feat(auth): implement JWT refresh
+fix(projects): resolve duplicate codes
+test(financials): add NPV tests
+docs(readme): update setup
+
+# Branch format
+feature/auth-refresh-tokens
+bugfix/project-duplication
+hotfix/security-vulnerability
+
+# Before commit
+✅ npm run test
+✅ npm run lint
+✅ npm run build
+✅ Browser check
+✅ No console.log
+```
+
+---
+
+## 🆘 WHEN STUCK
+
+1. Re-read the prompt
+2. Check existing code patterns
+3. Read docs (Fastify/Prisma/React/Playwright)
+4. Check tests for expected behavior
+5. Ask clarifying question
+
+**NEVER:**
+- Continue if tests fail
+- Use `any` type
+- Return passwords
+- Commit without tests
+- Skip browser check
+- Ignore console errors
+
+---
+
+## 📞 ASK FOR HELP
+
+```
+❓ Question: [your question]
+
+🎯 Context:
+- What you're trying to do
+- What you tried
+- Error message
+- Browser console output
+
+💡 Expected result:
+- What should work
+```
+
+---
+
+## 🚀 REMEMBER
+
+**"Security → Tests → Types → Browser Verify"**
+
+1. 🔒 Security FIRST
+2. 🧪 Tests FIRST (TDD)
+3. 📘 Types ALWAYS (no any)
+4. 🌐 Browser CHECK (always)
+
+**When in doubt, ASK!**
+
+---
+
+**Version:** 3.0
+**Updated:** 2026-02-07
+**Location:** D:\Projects\feleti-rnd\.cursorrules
+
+---
+
+## 📚 QUICK COMMANDS
+
+```bash
+# Start project
+cd D:\Projects\feleti-rnd\apps\api && npm run dev    # Terminal 1
+cd D:\Projects\feleti-rnd\apps\web && npm run dev    # Terminal 2
+
+# Test
+npm run test
+npx playwright test
+
+# Check browser (PowerShell)
+Start-Process "http://localhost:5173"
+Start-Process "http://localhost:3001/docs"
+
+# Database
+npx prisma studio
+npx prisma migrate dev
+npx prisma db seed
+```
+
+---
+
+## 🔧 CODE QUALITY ENFORCEMENT
+
+**ОБЯЗАТЕЛЬНО перед написанием кода:**
+
+1. ✅ Прочитай STYLE_GUIDE.md
+2. ✅ Проверь ESLint правила
+3. ✅ Используй правильные типы
+4. ✅ Запусти `npm run lint` после изменений
+5. ✅ Запусти `npm run format` перед коммитом
+
+**ЗАПРЕЩЕНО:**
+- ❌ any типы (используй unknown или конкретный тип)
+- ❌ console.log (используй logger)
+- ❌ Забытые await
+- ❌ new PrismaClient() (используй singleton)
+- ❌ index как key в React
+
+**ОБЯЗАТЕЛЬНО:**
+- ✅ Явные return types у функций
+- ✅ Строгая типизация везде
+- ✅ Проверка на null/undefined
+- ✅ Правильное именование
+- ✅ Порядок импортов
+
+---
+
+END OF .cursorrules - Version 3.2

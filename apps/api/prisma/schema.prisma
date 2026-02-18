@@ -3,8 +3,25 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStage {
+  IDEA
+  CONCEPT
+  DESIGN
+  PROTOTYPE
+  TESTING
+  PRODUCTION
+  COMPLETED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  CANCELLED
+  COMPLETED
 }
 
 model User {
@@ -13,19 +30,24 @@ model User {
   username      String    @unique
   passwordHash  String
   fullName      String
+  isBlocked     Boolean   @default(false)
   roleId        String
   role          Role      @relation(fields: [roleId], references: [id])
   telegramId    String?   @unique
   preferences   Json?
+  resetToken          String?   @unique
+  resetTokenExpiresAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      UserSession[]
   ownedProjects Project[] @relation("ProjectOwner")
+  projectMembers ProjectMember[]
   assignedTasks Task[]    @relation("TaskAssignee")
   comments      Comment[]
   auditLogs     AuditLog[]
   authoredLessons LessonLearned[]
   authoredVocs  VoiceOfCustomer[]
+  uploadedAttachments Attachment[] @relation("UploadedAttachments")
 
   @@index([email])
   @@index([roleId])
@@ -59,23 +81,27 @@ model Project {
   code            String    @unique
   name            String
   description     String?
-  stage           String    @default("concept")
-  status          String    @default("active")
+  stage           ProjectStage @default(CONCEPT)
+  status          ProjectStatus @default(ACTIVE)
   priority        String    @default("medium")
   ownerId         String
   owner           User      @relation("ProjectOwner", fields: [ownerId], references: [id])
   startDate       DateTime?
   endDate         DateTime?
+  targetDate      DateTime?
+  completedAt     DateTime?
   budget          Float?
-  actualCost      Float     @default(0)
+  spent           Float     @default(0)
   scores          Json?
   financials      Financial[]
   competitorLinks CompetitorProject[]
   documents       Document[]
+  attachments     Attachment[]
   tasks           Task[]
   comments        Comment[]
   lessonsLearned  LessonLearned[]
   vocs            VoiceOfCustomer[]
+  members         ProjectMember[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -83,6 +109,23 @@ model Project {
   @@index([ownerId])
   @@index([stage])
   @@index([status])
+  @@index([name]) // For search functionality
+  @@index([ownerId, status]) // Composite index for filtering
+  @@index([createdAt]) // For sorting
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String
+  joinedAt  DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
 }
 
 model Financial {
@@ -166,9 +209,9 @@ model Task {
 
 model Comment {
   id          String   @id @default(uuid())
-  content     String
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text        String
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   projectId   String?
   project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   taskId      String?
@@ -179,7 +222,7 @@ model Comment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([userId])
+  @@index([authorId])
   @@index([projectId])
   @@index([taskId])
 }
@@ -237,4 +280,21 @@ model VoiceOfCustomer {
   @@index([projectId])
   @@index([category])
   @@index([status])
+}
+
+model Attachment {
+  id          String   @id @default(uuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  path        String
+  projectId   String
+  uploadedById String
+  createdAt   DateTime @default(now())
+  
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy  User    @relation("UploadedAttachments", fields: [uploadedById], references: [id])
+  
+  @@index([projectId])
 }

@@ -1,218 +1,157 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcrypt'
+import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcryptjs'; // ← ВАЖНО: bcryptjs!
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting seed...')
+  // Очищаем
+  await prisma.projectMember.deleteMany();
+  await prisma.project.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.role.deleteMany();
 
-  // 1. Создайте роли
-  console.log('📦 Creating roles...')
+  // Роли
   const adminRole = await prisma.role.create({
-    data: {
-      name: 'admin',
-      description: 'Administrator with full access',
-      permissions: {
-        users: ['read', 'write', 'delete'],
-        projects: ['read', 'write', 'delete'],
-        financials: ['read', 'write'],
-        competitors: ['read', 'write'],
-        tasks: ['read', 'write'],
-      },
-      isSystem: true,
-    },
-  })
-
+    data: { name: 'Admin', permissions: {} },
+  });
+  const managerRole = await prisma.role.create({
+    data: { name: 'Manager', permissions: {} },
+  });
   const engineerRole = await prisma.role.create({
-    data: {
-      name: 'engineer',
-      description: 'R&D Engineer',
-      permissions: {
-        projects: ['read', 'write'],
-        financials: ['read'],
-        competitors: ['read'],
-        tasks: ['read', 'write'],
-      },
-      isSystem: false,
-    },
-  })
+    data: { name: 'Engineer', permissions: {} },
+  });
 
-  // 2. Создайте пользователей
-  console.log('👤 Creating users...')
+  // Пароли
+  const adminPass = await bcrypt.hash('admin123', 12);
+  const userPass = await bcrypt.hash('user123', 12);
+
+  // Пользователи
   const admin = await prisma.user.create({
     data: {
       email: 'admin@feleti.com',
       username: 'admin',
-      passwordHash: await bcrypt.hash('admin123', 12),
-      fullName: 'Admin User',
+      passwordHash: adminPass,
+      fullName: 'Администратор Системы',
       roleId: adminRole.id,
     },
-  })
+  });
 
-  const engineer1 = await prisma.user.create({
+  const manager = await prisma.user.create({
     data: {
-      email: 'ivanov@feleti.com',
-      username: 'ivanov',
-      passwordHash: await bcrypt.hash('engineer123', 12),
-      fullName: 'Ivan Ivanov',
+      email: 'manager@feleti.com',
+      username: 'manager',
+      passwordHash: userPass,
+      fullName: 'Менеджер Проектов',
+      roleId: managerRole.id,
+    },
+  });
+
+  const engineer = await prisma.user.create({
+    data: {
+      email: 'engineer@feleti.com',
+      username: 'engineer',
+      passwordHash: userPass,
+      fullName: 'Инженер-Разработчик',
       roleId: engineerRole.id,
     },
-  })
+  });
 
-  const engineer2 = await prisma.user.create({
-    data: {
-      email: 'petrov@feleti.com',
-      username: 'petrov',
-      passwordHash: await bcrypt.hash('engineer123', 12),
-      fullName: 'Petr Petrov',
-      roleId: engineerRole.id,
-    },
-  })
-
-  // 3. Создайте конкурентов
-  console.log('🏆 Creating competitors...')
-  const gea = await prisma.competitor.create({
-    data: {
-      name: 'GEA Group',
-      description: 'German industrial equipment manufacturer',
-      website: 'https://www.gea.com',
-      strengths: ['technology', 'global presence', 'quality'],
-      weaknesses: ['high price', 'slow adaptation'],
-    },
-  })
-
-  const laska = await prisma.competitor.create({
-    data: {
-      name: 'Laska',
-      description: 'Czech refrigeration equipment manufacturer',
-      website: 'https://www.laska.cz',
-      strengths: ['price', 'service', 'local presence'],
-      weaknesses: ['limited assortment'],
-    },
-  })
-
-  const kilia = await prisma.competitor.create({
-    data: {
-      name: 'KILIA',
-      description: 'Belarusian compressor equipment manufacturer',
-      website: 'https://www.kilia.by',
-      strengths: ['price', 'ease of maintenance'],
-      weaknesses: ['outdated technologies'],
-    },
-  })
-
-  const bitzer = await prisma.competitor.create({
-    data: {
-      name: 'BITZER',
-      description: 'German compressor manufacturer',
-      website: 'https://www.bitzer.de',
-      strengths: ['quality', 'reliability', 'technology'],
-      weaknesses: ['high price'],
-    },
-  })
-
-  const frick = await prisma.competitor.create({
-    data: {
-      name: 'Frick',
-      description: 'American industrial refrigeration systems manufacturer',
-      website: 'https://www.frick.com',
-      strengths: ['industrial solutions', 'reliability'],
-      weaknesses: ['limited presence in CIS'],
-    },
-  })
-
-  // 4. Создайте проекты
-  console.log('📊 Creating projects...')
-  const k200 = await prisma.project.create({
+  // Проекты
+  const p1 = await prisma.project.create({
     data: {
       code: 'K-200',
-      name: 'Compressor K-200',
-      description: 'High-performance compressor for industrial cooling',
-      stage: 'development',
-      status: 'active',
-      priority: 'high',
-      ownerId: engineer1.id,
-      startDate: new Date('2024-01-15'),
-      endDate: new Date('2024-12-31'),
+      name: 'Куттер K-200 v2.0',
+      description: 'Модернизация куттера K-200',
+      stage: 'DESIGN',
+      status: 'ACTIVE',
       budget: 5000000,
-      scores: {
-        technical: 85,
-        market: 90,
-        financial: 80,
-      },
-    },
-  })
-
-  const k300 = await prisma.project.create({
-    data: {
-      code: 'K-300',
-      name: 'Compressor K-300',
-      description: 'Ultra-powerful compressor for heavy industry',
-      stage: 'concept',
-      status: 'active',
+      spent: 1200000,
+      startDate: new Date('2024-01-15'),
+      targetDate: new Date('2025-06-30'),
+      ownerId: admin.id,
       priority: 'medium',
-      ownerId: engineer2.id,
-      startDate: new Date('2024-03-01'),
-      endDate: new Date('2025-06-30'),
-      budget: 8000000,
-      scores: {
-        technical: 75,
-        market: 85,
-        financial: 70,
-      },
     },
-  })
+  });
 
-  const v150 = await prisma.project.create({
+  const p2 = await prisma.project.create({
     data: {
-      code: 'V-150',
-      name: 'Fan V-150',
-      description: 'Energy-efficient fan for ventilation systems',
-      stage: 'testing',
-      status: 'active',
-      priority: 'high',
-      ownerId: engineer1.id,
-      startDate: new Date('2023-09-01'),
-      endDate: new Date('2024-06-30'),
+      code: 'VAC-350',
+      name: 'Вакуумный упаковщик VAC-350',
+      description: 'Новый вакуумный упаковщик',
+      stage: 'PROTOTYPE',
+      status: 'ACTIVE',
       budget: 3000000,
-      scores: {
-        technical: 90,
-        market: 80,
-        financial: 85,
-      },
+      spent: 2100000,
+      startDate: new Date('2024-03-01'),
+      targetDate: new Date('2025-12-31'),
+      ownerId: manager.id,
+      priority: 'medium',
     },
-  })
+  });
 
-  // 5. Создайте связи проектов с конкурентами
-  console.log('🔗 Creating competitor-project links...')
-  await prisma.competitorProject.createMany({
+  await prisma.project.create({
+    data: {
+      code: 'CONV-100',
+      name: 'Конвейер CONV-100',
+      description: 'Автоматизированная линия',
+      stage: 'TESTING',
+      status: 'ACTIVE',
+      budget: 8000000,
+      spent: 6500000,
+      startDate: new Date('2023-06-01'),
+      targetDate: new Date('2025-03-31'),
+      ownerId: admin.id,
+      priority: 'medium',
+    },
+  });
+
+  await prisma.project.create({
+    data: {
+      code: 'PACK-75',
+      name: 'Упаковочная машина PACK-75',
+      description: 'Упаковочная машина для малого бизнеса',
+      stage: 'CONCEPT',
+      status: 'ACTIVE',
+      budget: 2000000,
+      spent: 300000,
+      startDate: new Date('2025-01-01'),
+      targetDate: new Date('2026-06-30'),
+      ownerId: manager.id,
+      priority: 'medium',
+    },
+  });
+
+  await prisma.project.create({
+    data: {
+      code: 'SMOKE-25',
+      name: 'Коптильня SMOKE-25',
+      description: 'Промышленная коптильная установка',
+      stage: 'PRODUCTION',
+      status: 'ACTIVE',
+      budget: 4000000,
+      spent: 3800000,
+      startDate: new Date('2023-01-01'),
+      targetDate: new Date('2024-12-31'),
+      ownerId: admin.id,
+      priority: 'medium',
+    },
+  });
+
+  // Члены команды
+  await prisma.projectMember.createMany({
     data: [
-      { projectId: k200.id, competitorId: gea.id, notes: 'Direct competitor in industrial segment' },
-      { projectId: k200.id, competitorId: bitzer.id, notes: 'Technology benchmark' },
-      { projectId: k300.id, competitorId: frick.id, notes: 'Heavy industry solutions' },
-      { projectId: v150.id, competitorId: laska.id, notes: 'Regional competitor' },
+      { projectId: p1.id, userId: manager.id, role: 'Lead Engineer' },
+      { projectId: p1.id, userId: engineer.id, role: 'Developer' },
+      { projectId: p2.id, userId: engineer.id, role: 'Lead Engineer' },
     ],
-  })
-
-  console.log('✅ Seed completed successfully!')
-  console.log('')
-  console.log('📊 Demo data summary:')
-  console.log('   - 2 roles (admin, engineer)')
-  console.log('   - 3 users')
-  console.log('   - 5 competitors')
-  console.log('   - 3 projects')
-  console.log('   - 4 competitor-project links')
-  console.log('')
-  console.log('🔑 Login credentials:')
-  console.log('   Admin: admin@feleti.com / admin123')
-  console.log('   Engineer: ivanov@feleti.com / engineer123')
+  });
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e)
-    process.exit(1)
+    console.error('❌ Ошибка:', e);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });

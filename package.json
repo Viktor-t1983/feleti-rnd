@@ -2,19 +2,37 @@
   "name": "feleti-rnd",
   "version": "1.0.0",
   "private": true,
-  "description": "FELETI R&D Assistant 2.0",
+  "description": "FELETI R&D - Система управления R&D проектами",
+  "author": "FELETI Team",
+  "license": "MIT",
   "workspaces": [
-    "apps/*"
+    "apps/api",
+    "apps/web"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:calc\"",
-    "dev:api": "cd apps/api && npm run dev",
-    "dev:web": "cd apps/web && npm run dev",
-    "dev:calc": "cd apps/calc-engine && .\\venv\\Scripts\\activate && uvicorn app.main:app --reload --port 8000",
-    "build": "npm run build --workspaces",
-    "clean": "rimraf node_modules apps/*/node_modules"
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:web": "npm run build --workspace=apps/web",
+    "build": "npm run build:api && npm run build:web",
+    "test:api": "npm run test --workspace=apps/api",
+    "test:web": "npm run test --workspace=apps/web",
+    "test": "npm run test:api && npm run test:web",
+    "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:rebuild": "docker-compose up --build -d",
+    "docker:logs": "docker-compose logs -f",
+    "prisma:migrate": "npm run db:migrate --workspace=apps/api",
+    "prisma:studio": "npm run db:studio --workspace=apps/api"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
-  }
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.8.0"
 }

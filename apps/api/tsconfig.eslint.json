@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*", "vitest.config.ts", "prisma/seed.ts", ".eslintrc.cjs"],
+  "exclude": ["debug-token.js", "test-jwt-compatibility.js"]
+}

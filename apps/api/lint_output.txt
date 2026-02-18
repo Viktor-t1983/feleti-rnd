@@ -1,0 +1,538 @@
+
+> @feleti/api@1.0.0 lint
+> eslint src --ext .ts
+
+
+d:\projects\feleti-rnd\apps\api\src\middlewares\authenticate.ts
+  112:17  error  Parsing error: '{' or ';' expected
+
+d:\projects\feleti-rnd\apps\api\src\modules\analytics\analytics.types.ts
+   6:10  error  'Prisma' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  41:13  error  Unexpected any. Specify a different type                                  @typescript-eslint/no-explicit-any
+  41:13  error  'any' overrides all other types in this union type                        @typescript-eslint/no-redundant-type-constituents
+
+d:\projects\feleti-rnd\apps\api\src\modules\analytics\tests\analytics.service.test.ts
+   28:17  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   29:17  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   49:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   49:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   49:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+   50:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   50:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   50:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+   52:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   52:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   52:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   53:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   54:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   55:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   55:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   55:36  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   56:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   57:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   58:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   58:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   58:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   59:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   63:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   67:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   67:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   67:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+   83:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   83:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   83:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+   84:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   84:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   84:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+   86:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   86:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   86:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   87:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   88:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   89:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   89:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   89:36  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   90:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   91:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   92:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   92:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   92:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   93:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   94:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   95:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   95:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   95:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  104:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  104:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  104:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  105:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  105:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  105:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  107:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  107:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  107:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  108:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+  109:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+  110:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  110:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  110:36  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  111:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+  112:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+  113:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  113:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  113:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  114:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+  115:10  error  Unsafe member access .mockResolvedValueOnce on an `any` value                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+  116:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  116:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  116:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  126:13  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  127:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  127:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  127:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  128:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  128:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  128:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  130:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  130:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  130:37  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  135:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  148:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  148:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  148:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  149:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  149:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  149:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  156:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  156:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  156:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  169:13  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  170:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  170:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  170:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  171:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  171:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  171:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  173:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  173:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  173:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  178:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  192:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  192:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  192:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  193:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  193:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  193:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  198:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  198:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  198:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  207:13  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  208:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  208:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  208:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  209:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  209:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  209:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  211:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  211:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  211:39  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  216:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+
+d:\projects\feleti-rnd\apps\api\src\modules\auth\auth.routes.ts
+   76:8   error  Missing return type on function                                                                                      @typescript-eslint/explicit-function-return-type
+   76:8   error  Async function 'authRoutes' has no 'await' expression                                                                @typescript-eslint/require-await
+   82:7   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+   83:7   error  Unsafe assignment of an `any` value                                                                                  @typescript-eslint/no-unsafe-assignment
+   83:78  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  126:7   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  127:7   error  Unsafe assignment of an `any` value                                                                                  @typescript-eslint/no-unsafe-assignment
+  127:72  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  175:5   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+  205:9   error  Unsafe assignment of an error typed value                                                                            @typescript-eslint/no-unsafe-assignment
+  206:9   error  Unsafe assignment of an error typed value                                                                            @typescript-eslint/no-unsafe-assignment
+  207:9   error  Unsafe assignment of an error typed value                                                                            @typescript-eslint/no-unsafe-assignment
+
+d:\projects\feleti-rnd\apps\api\src\modules\auth\auth.service.ts
+    8:8   error  Missing return type on function                                                               @typescript-eslint/explicit-function-return-type
+   55:25  error  Variable name `_` must match one of the following formats: camelCase, UPPER_CASE, PascalCase  @typescript-eslint/naming-convention
+   66:8   error  Missing return type on function                                                               @typescript-eslint/explicit-function-return-type
+   83:11  error  'passwordHash' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  105:13  error  'passwordHash' is assigned a value but never used. Allowed unused vars must match /^_/u       @typescript-eslint/no-unused-vars
+  108:3   error  Async method 'refreshAccessToken' has no 'await' expression                                   @typescript-eslint/require-await
+  108:30  error  'refreshToken' is defined but never used. Allowed unused args must match /^_/u                @typescript-eslint/no-unused-vars
+
+d:\projects\feleti-rnd\apps\api\src\modules\auth\tests\auth.service.test.ts
+    1:1   error  There should be no empty line within import group               import/order
+   31:1   error  `@prisma/client` import should occur before import of `vitest`  import/order
+   55:7   error  Unsafe assignment of an `any` value                             @typescript-eslint/no-unsafe-assignment
+   55:42  error  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   76:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+   76:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+   77:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+   77:18  error  Unsafe member access .role on an `any` value                    @typescript-eslint/no-unsafe-member-access
+   78:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+   78:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+   98:25  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  114:9   error  Unsafe assignment of an `any` value                             @typescript-eslint/no-unsafe-assignment
+  115:9   error  Unsafe assignment of an `any` value                             @typescript-eslint/no-unsafe-assignment
+  128:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  128:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  129:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  129:18  error  Unsafe member access .role on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  133:25  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  165:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  165:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  166:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  166:18  error  Unsafe member access .role on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  167:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  167:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  210:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  210:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  219:25  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  233:9   error  Unsafe assignment of an `any` value                             @typescript-eslint/no-unsafe-assignment
+  234:9   error  Unsafe assignment of an `any` value                             @typescript-eslint/no-unsafe-assignment
+  244:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  244:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  255:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  255:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  267:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  267:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  300:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  300:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  306:25  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  316:9   error  Unsafe assignment of an `any` value                             @typescript-eslint/no-unsafe-assignment
+  317:9   error  Unsafe assignment of an `any` value                             @typescript-eslint/no-unsafe-assignment
+  327:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  327:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+  339:7   error  Unsafe call of an `any` typed value                             @typescript-eslint/no-unsafe-call
+  339:18  error  Unsafe member access .user on an `any` value                    @typescript-eslint/no-unsafe-member-access
+
+d:\projects\feleti-rnd\apps\api\src\modules\projects\projects.routes.ts
+   8:10  error  'ValidationError' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+  15:3   error  'removeProjectMemberSchema' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+  21:10  error  'prisma' is defined but never used. Allowed unused vars must match /^_/u                     @typescript-eslint/no-unused-vars
+  33:8   error  Missing return type on function                                                              @typescript-eslint/explicit-function-return-type
+  33:8   error  Async function 'projectsRoutes' has no 'await' expression                                    @typescript-eslint/require-await
+  78:13  error  Unsafe assignment of an `any` value                                                          @typescript-eslint/no-unsafe-assignment
+  78:34  error  Unexpected any. Specify a different type                                                     @typescript-eslint/no-explicit-any
+  78:39  error  Unsafe member access .user on an `any` value                                                 @typescript-eslint/no-unsafe-member-access
+  79:35  error  Unexpected any. Specify a different type                                                     @typescript-eslint/no-explicit-any
+  79:40  error  Unsafe member access .user on an `any` value                                                 @typescript-eslint/no-unsafe-member-access
+  81:70  error  Unsafe argument of type `any` assigned to a parameter of type `string`                       @typescript-eslint/no-unsafe-argument
+  95:13  error  Unsafe assignment of an `any` value                                                          @typescript-eslint/no-unsafe-assignment
+  95:34  error  Unexpected any. Specify a different type                                                     @typescript-eslint/no-explicit-any
+  95:39  error  Unsafe member access .user on an `any` value                                                 @typescript-eslint/no-unsafe-member-access
+  96:35  error  Unexpected any. Specify a different type                                                     @typescript-eslint/no-explicit-any
+  96:40  error  Unsafe member access .user on an `any` value                                                 @typescript-eslint/no-unsafe-member-access
+  98:47  error  Unsafe argument of type `any` assigned to a parameter of type `string`                       @typescript-eslint/no-unsafe-argument
+
+d:\projects\feleti-rnd\apps\api\src\modules\projects\projects.service.ts
+    6:10  error  'ProjectStage' is defined but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+   18:3   error  'RemoveProjectMemberInput' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+   34:18  error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+   37:13  error  Unsafe member access .stage on an `any` value                                               @typescript-eslint/no-unsafe-member-access
+   41:13  error  Unsafe member access .status on an `any` value                                              @typescript-eslint/no-unsafe-member-access
+   45:13  error  Unsafe member access .ownerId on an `any` value                                             @typescript-eslint/no-unsafe-member-access
+   49:13  error  Unsafe member access .OR on an `any` value                                                  @typescript-eslint/no-unsafe-member-access
+   56:48  error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment
+   60:7   error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment
+  129:13  error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment
+  143:11  error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment
+  143:35  error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+  153:14  error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+  156:21  error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+  157:17  error  Unsafe member access .code on an `any` value                                                @typescript-eslint/no-unsafe-member-access
+  189:11  error  Unsafe assignment of an `any` value                                                         @typescript-eslint/no-unsafe-assignment
+  213:12  error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+  269:21  error  Unexpected any. Specify a different type                                                    @typescript-eslint/no-explicit-any
+  270:17  error  Unsafe member access .code on an `any` value                                                @typescript-eslint/no-unsafe-member-access
+
+d:\projects\feleti-rnd\apps\api\src\modules\projects\projects.types.ts
+  69:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  70:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  74:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  75:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+d:\projects\feleti-rnd\apps\api\src\modules\projects\tests\projects.service.test.ts
+   20:47  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   21:47  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   27:47  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   71:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   71:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   71:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+   72:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+   72:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+   72:37  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  106:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  106:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  106:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  107:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  107:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  107:37  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  111:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  113:11  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  119:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  120:18  error  Unsafe member access .stage on an `any` value                                                                                                                                                                   @typescript-eslint/no-unsafe-member-access
+  146:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  146:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  146:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  147:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  147:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  147:37  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  151:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  153:11  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  159:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  160:18  error  Unsafe member access .status on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  186:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  186:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  186:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  187:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  187:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  187:37  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  191:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  193:11  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  194:13  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  195:41  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  196:41  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  203:34  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  203:42  error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  203:44  error  Unsafe member access .name on an `any` value                                                                                                                                                                    @typescript-eslint/no-unsafe-member-access
+  203:70  error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  203:72  error  Unsafe member access .code on an `any` value                                                                                                                                                                    @typescript-eslint/no-unsafe-member-access
+  229:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  229:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  229:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  230:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  230:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  230:37  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  234:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  236:11  error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  242:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  243:18  error  Unsafe member access .ownerId on an `any` value                                                                                                                                                                 @typescript-eslint/no-unsafe-member-access
+  267:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  267:35  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  267:40  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  268:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  268:32  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  268:37  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  276:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  315:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  315:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  315:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  322:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  324:9   error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  329:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  329:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  329:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  358:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  358:33  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  358:38  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  371:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  372:9   error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  392:17  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  392:22  error  Unsafe member access .code on an `any` value                                                                                                                                                                    @typescript-eslint/no-unsafe-member-access
+  394:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  394:33  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  394:38  error  Unsafe member access .mockRejectedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  428:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  428:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  428:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  432:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  432:33  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  432:38  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  445:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  447:9   error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  463:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  463:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  463:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  471:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  471:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  471:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  501:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  501:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  501:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  505:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  505:33  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  505:38  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  539:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  539:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  539:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  543:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  543:33  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  543:38  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  547:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  549:9   error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  556:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  556:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  556:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  564:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  564:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  564:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  592:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  592:37  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  592:42  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  596:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  596:33  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  596:38  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  600:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  619:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  619:39  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  619:44  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  628:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  629:9   error  Unsafe assignment of an `any` value                                                                                                                                                                             @typescript-eslint/no-unsafe-assignment
+  648:17  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  648:22  error  Unsafe member access .code on an `any` value                                                                                                                                                                    @typescript-eslint/no-unsafe-member-access
+  650:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  650:39  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  650:44  error  Unsafe member access .mockRejectedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  664:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  664:39  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  664:44  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  668:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+  696:7   error  Unsafe call of an `any` typed value                                                                                                                                                                             @typescript-eslint/no-unsafe-call
+  696:41  error  Unexpected any. Specify a different type                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  696:46  error  Unsafe member access .mockResolvedValue on an `any` value                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  703:14  error  Avoid referencing unbound methods which may cause unintentional scoping of `this`.
+If your function does not access `this`, you can annotate it with `this: void`, or consider using an arrow function instead  @typescript-eslint/unbound-method
+
+d:\projects\feleti-rnd\apps\api\src\plugins\errorHandler.ts
+   7:21  error  Unexpected any. Specify a different type                       @typescript-eslint/no-explicit-any
+   9:28  error  Missing return type on function                                @typescript-eslint/explicit-function-return-type
+  14:3   error  Unsafe return of an `any` typed value                          @typescript-eslint/no-unsafe-return
+  23:1   error  Missing return type on function                                @typescript-eslint/explicit-function-return-type
+  23:1   error  Async function 'errorHandlerPlugin' has no 'await' expression  @typescript-eslint/require-await
+  28:13  error  Unsafe assignment of an `any` value                            @typescript-eslint/no-unsafe-assignment
+  32:9   error  Unsafe call of an `any` typed value                            @typescript-eslint/no-unsafe-call
+  32:16  error  Unsafe member access .error on an `any` value                  @typescript-eslint/no-unsafe-member-access
+  46:9   error  Unsafe call of an `any` typed value                            @typescript-eslint/no-unsafe-call
+  46:16  error  Unsafe member access .error on an `any` value                  @typescript-eslint/no-unsafe-member-access
+  63:30  error  Unexpected any. Specify a different type                       @typescript-eslint/no-explicit-any
+  68:25  error  Unsafe member access .details on an `any` value                @typescript-eslint/no-unsafe-member-access
+  71:25  error  Unsafe member access .stack on an `any` value                  @typescript-eslint/no-unsafe-member-access
+  74:11  error  Unsafe assignment of an `any` value                            @typescript-eslint/no-unsafe-assignment
+  78:30  error  Unexpected any. Specify a different type                       @typescript-eslint/no-explicit-any
+  83:25  error  Unsafe member access .stack on an `any` value                  @typescript-eslint/no-unsafe-member-access
+  86:11  error  Unsafe assignment of an `any` value                            @typescript-eslint/no-unsafe-assignment
+
+d:\projects\feleti-rnd\apps\api\src\plugins\jwt.ts
+    1:8   error  'fastifyCookie' is defined but never used. Allowed unused vars must match /^_/u                                                                                     @typescript-eslint/no-unused-vars
+    2:22  error  'FastifyJWTOptions' is defined but never used. Allowed unused vars must match /^_/u                                                                                 @typescript-eslint/no-unused-vars
+   36:36  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   37:37  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   38:44  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   42:1   error  Missing return type on function                                                                                                                                     @typescript-eslint/explicit-function-return-type
+   42:35  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   48:9   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   48:17  error  Unsafe member access .register on an `any` value                                                                                                                    @typescript-eslint/no-unsafe-member-access
+   66:3   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   66:11  error  Unsafe member access .decorate on an `any` value                                                                                                                    @typescript-eslint/no-unsafe-member-access
+   66:59  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   66:73  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   67:5   error  Unsafe return of an `any` typed value                                                                                                                               @typescript-eslint/no-unsafe-return
+   67:12  error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   67:17  error  Unsafe member access .jwt on an `any` value                                                                                                                         @typescript-eslint/no-unsafe-member-access
+   71:3   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   71:11  error  Unsafe member access .decorate on an `any` value                                                                                                                    @typescript-eslint/no-unsafe-member-access
+   71:60  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   71:74  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   72:5   error  Unsafe return of an `any` typed value                                                                                                                               @typescript-eslint/no-unsafe-return
+   72:12  error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   72:17  error  Unsafe member access .jwt on an `any` value                                                                                                                         @typescript-eslint/no-unsafe-member-access
+   79:3   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   79:11  error  Unsafe member access .decorate on an `any` value                                                                                                                    @typescript-eslint/no-unsafe-member-access
+   79:58  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   81:7   error  Unsafe return of an `any` typed value                                                                                                                               @typescript-eslint/no-unsafe-return
+   81:14  error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   81:19  error  Unsafe member access .jwt on an `any` value                                                                                                                         @typescript-eslint/no-unsafe-member-access
+   88:3   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   88:11  error  Unsafe member access .decorate on an `any` value                                                                                                                    @typescript-eslint/no-unsafe-member-access
+   90:13  error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+   90:25  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   90:30  error  Unsafe member access .jwtVerify on an `any` value                                                                                                                   @typescript-eslint/no-unsafe-member-access
+   93:7   error  Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
+   93:19  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   93:24  error  Unsafe member access .user on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
+   93:43  error  Unexpected any. Specify a different type                                                                                                                            @typescript-eslint/no-explicit-any
+   93:48  error  Unsafe member access .user on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
+   95:7   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  103:3   error  Unsafe call of an `any` typed value                                                                                                                                 @typescript-eslint/no-unsafe-call
+  103:11  error  Unsafe member access .addHook on an `any` value                                                                                                                     @typescript-eslint/no-unsafe-member-access
+  103:39  error  'request' is defined but never used. Allowed unused args must match /^_/u                                                                                           @typescript-eslint/no-unused-vars
+  103:64  error  'reply' is defined but never used. Allowed unused args must match /^_/u                                                                                             @typescript-eslint/no-unused-vars
+
+d:\projects\feleti-rnd\apps\api\src\plugins\rateLimit.ts
+   8:37  error  Unsafe argument of type `any` assigned to a parameter of type `FastifyRegisterOptions<RateLimitPluginOptions>`  @typescript-eslint/no-unsafe-argument
+  16:8   error  Unexpected any. Specify a different type                                                                        @typescript-eslint/no-explicit-any
+
+d:\projects\feleti-rnd\apps\api\src\plugins\security.ts
+  10:3  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+d:\projects\feleti-rnd\apps\api\src\plugins\swagger.ts
+  12:59  error  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+d:\projects\feleti-rnd\apps\api\src\server-simple.ts
+   3:10  error  'authRoutes' is defined but never used. Allowed unused vars must match /^_/u                                                                                        @typescript-eslint/no-unused-vars
+  10:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  10:34  error  Async arrow function has no 'await' expression                                                                                                                      @typescript-eslint/require-await
+  11:45  error  'request' is defined but never used. Allowed unused args must match /^_/u                                                                                           @typescript-eslint/no-unused-vars
+  11:54  error  'reply' is defined but never used. Allowed unused args must match /^_/u                                                                                             @typescript-eslint/no-unused-vars
+  14:42  error  'request' is defined but never used. Allowed unused args must match /^_/u                                                                                           @typescript-eslint/no-unused-vars
+  14:51  error  'reply' is defined but never used. Allowed unused args must match /^_/u                                                                                             @typescript-eslint/no-unused-vars
+  17:38  error  'request' is defined but never used. Allowed unused args must match /^_/u                                                                                           @typescript-eslint/no-unused-vars
+  17:47  error  'reply' is defined but never used. Allowed unused args must match /^_/u                                                                                             @typescript-eslint/no-unused-vars
+  20:44  error  'request' is defined but never used. Allowed unused args must match /^_/u                                                                                           @typescript-eslint/no-unused-vars
+  20:53  error  'reply' is defined but never used. Allowed unused args must match /^_/u                                                                                             @typescript-eslint/no-unused-vars
+  23:43  error  'request' is defined but never used. Allowed unused args must match /^_/u                                                                                           @typescript-eslint/no-unused-vars
+  23:52  error  'reply' is defined but never used. Allowed unused args must match /^_/u                                                                                             @typescript-eslint/no-unused-vars
+  28:33  error  Async arrow function has no 'await' expression                                                                                                                      @typescript-eslint/require-await
+  32:24  error  Missing return type on function                                                                                                                                     @typescript-eslint/explicit-function-return-type
+  35:5   error  Unexpected console statement                                                                                                                                        no-console
+  42:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+d:\projects\feleti-rnd\apps\api\src\server-valid.ts
+   1:8   error  'cookie' is defined but never used. Allowed unused vars must match /^_/u                                                                                            @typescript-eslint/no-unused-vars
+  19:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  24:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  27:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  30:33  error  Async arrow function has no 'await' expression                                                                                                                      @typescript-eslint/require-await
+  34:27  error  Async arrow function has no 'await' expression                                                                                                                      @typescript-eslint/require-await
+  42:24  error  Missing return type on function                                                                                                                                     @typescript-eslint/explicit-function-return-type
+  55:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+d:\projects\feleti-rnd\apps\api\src\server.ts
+   2:8   error  'fp' is defined but never used. Allowed unused vars must match /^_/u                                                                                                @typescript-eslint/no-unused-vars
+  22:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  23:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  24:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  27:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  27:18  error  Unsafe argument of type `any` assigned to a parameter of type `FastifyPluginCallback<{ hook: string; }, RawServerDefault, FastifyTypeProvider, FastifyBaseLogger>`  @typescript-eslint/no-unsafe-argument
+  27:18  error  Require statement not part of import statement                                                                                                                      @typescript-eslint/no-var-requires
+  32:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  42:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  45:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  48:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  51:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  54:33  error  Async arrow function has no 'await' expression                                                                                                                      @typescript-eslint/require-await
+  63:24  error  Missing return type on function                                                                                                                                     @typescript-eslint/explicit-function-return-type
+  76:1   error  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+✖ 479 problems (479 errors, 0 warnings)
+

@@ -1,7 +1,64 @@
-﻿node_modules/
-.venv/
-venv/
+﻿# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
 .env
+.env.local
+.env.*.local
+
+# Build
 dist/
 build/
-*.db
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+docker-compose.override.yml
+
+# Uploads
+uploads/
+!uploads/.gitkeep
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+temp/
+tmp/
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing
+.vitest/
+playwright-report/
+test-results/

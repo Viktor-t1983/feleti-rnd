@@ -7,6 +7,18 @@
     "sqlite": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sqlite", "D:\\\\Projects\\\\feleti-rnd\\\\apps\\\\api\\\\prisma\\\\dev.db"]
+    },
+    "shell": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-shell"]
+    },
+    "http": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-http"]
+    },
+    "chrome-devtools": {
+      "command": "chrome-devtools-mcp-relay",
+      "args": []
     }
   },
   "roo-cline.customInstructions": [
@@ -17,12 +29,26 @@
     "Database: SQLite (dev)  PostgreSQL (prod)",
     "Python: FastAPI + NumPy + SciPy",
     "TypeScript strict mode",
-    "Все пути на диске D:\\Projects\\feleti-rnd"
+    "Все пути на диске D:\\Projects\\feleti-rnd",
+    "Используй браузер для тестирования фронтенда",
+    "Проверяй консоль браузера на ошибки",
+    "Делай скриншоты при ошибках",
+    "Анализируй логи сервера и консоль браузера"
   ],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.python"
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
   },
-  "git.autofetch": true
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "css.validate": false,
+  "stylelint.validate": ["css", "scss"],
+  "css.lint.unknownAtRules": "ignore"
 }

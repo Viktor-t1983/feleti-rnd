@@ -1,0 +1,12 @@
+src/components/projects/ProjectForm.tsx(68,19): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/components/projects/ProjectForm.tsx(70,19): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/components/projects/ProjectForm.tsx(74,19): error TS4111: Property 'ownerId' comes from an index signature, so it must be accessed with ['ownerId'].
+src/components/projects/ProjectForm.tsx(79,17): error TS4111: Property 'name' comes from an index signature, so it must be accessed with ['name'].
+src/components/projects/ProjectForm.tsx(120,15): error TS4111: Property 'form' comes from an index signature, so it must be accessed with ['form'].
+src/components/projects/ProjectForm.tsx(122,55): error TS4111: Property 'form' comes from an index signature, so it must be accessed with ['form'].
+src/components/projects/ProjectForm.tsx(142,21): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/components/projects/ProjectForm.tsx(144,25): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/components/projects/ProjectForm.tsx(164,19): error TS4111: Property 'name' comes from an index signature, so it must be accessed with ['name'].
+src/components/projects/ProjectForm.tsx(166,23): error TS4111: Property 'name' comes from an index signature, so it must be accessed with ['name'].
+src/components/projects/ProjectForm.tsx(326,21): error TS4111: Property 'ownerId' comes from an index signature, so it must be accessed with ['ownerId'].
+src/components/projects/ProjectForm.tsx(328,25): error TS4111: Property 'ownerId' comes from an index signature, so it must be accessed with ['ownerId'].

@@ -1,0 +1,98 @@
+/* Tailwind CSS v4 - Modern approach with @theme directive */
+/* eslint-disable-next-line css/no-at-rules -- @theme is a valid Tailwind CSS v4 directive */
+@import 'tailwindcss';
+
+@variant dark (&:where(.dark, .dark *));
+
+/* Theme configuration */
+/* eslint-disable-next-line css/no-at-rules -- @theme is a valid Tailwind CSS v4 directive */
+@theme {
+  --color-background: #ffffff;
+  --color-background-secondary: #f9fafb;
+  --color-background-tertiary: #f3f4f6;
+  --color-foreground: #111827;
+  --color-foreground-secondary: #374151;
+  --color-foreground-muted: #6b7280;
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-border: #e5e7eb;
+  --color-border-dark: #374151;
+
+  /* Dark mode colors */
+  --color-dark-background: #111827;
+  --color-dark-background-secondary: #1f2937;
+  --color-dark-background-tertiary: #374151;
+  --color-dark-foreground: #f9fafb;
+  --color-dark-foreground-secondary: #d1d5db;
+  --color-dark-foreground-muted: #9ca3af;
+  --color-dark-border: #374151;
+
+  /* Dark mode configuration */
+  --dark: {
+    --color-background: var(--color-dark-background);
+    --color-background-secondary: var(--color-dark-background-secondary);
+    --color-background-tertiary: var(--color-dark-background-tertiary);
+    --color-foreground: var(--color-dark-foreground);
+    --color-foreground-secondary: var(--color-dark-foreground-secondary);
+    --color-foreground-muted: var(--color-dark-foreground-muted);
+    --color-border: var(--color-dark-border);
+  };
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Ensure html element has proper background */
+html {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}
+
+/* Dark mode class applied to html element */
+html.dark {
+  background-color: var(--color-dark-background);
+  color: var(--color-dark-foreground);
+}
+
+/* Custom utility classes for theme-specific backgrounds */
+.bg-background {
+  background-color: var(--color-background);
+}
+.dark .bg-background {
+  background-color: var(--color-dark-background);
+}
+
+.bg-background-secondary {
+  background-color: var(--color-background-secondary);
+}
+.dark .bg-background-secondary {
+  background-color: var(--color-dark-background-secondary);
+}
+
+.text-foreground {
+  color: var(--color-foreground);
+}
+.dark .text-foreground {
+  color: var(--color-dark-foreground);
+}
+
+.text-foreground-secondary {
+  color: var(--color-foreground-secondary);
+}
+.dark .text-foreground-secondary {
+  color: var(--color-dark-foreground-secondary);
+}
+
+.border-border {
+  border-color: var(--color-border);
+}
+.dark .border-border {
+  border-color: var(--color-dark-border);
+}
