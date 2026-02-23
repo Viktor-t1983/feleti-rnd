@@ -2,10 +2,36 @@
 node_modules/
 .pnpm-store/
 
-# Environment
+# Environment - ALL variants
 .env
 .env.local
-.env.*.local
+.env.development
+.env.production
+.env.test
+.env*.local
+apps/api/.env
+apps/api/.env.local
+apps/api/.env.production
+apps/web/.env
+apps/web/.env.local
+apps/web/.env.production
+apps/calc-engine/.env
+apps/calc-engine/.env.local
+
+# Backups and sensitive data
+backups/
+*.sql
+*.sql.gz
+*.dump
+*.backup
+
+# Security
+*.key
+*.pem
+*.crt
+*.cer
+secrets/
+.secrets/
 
 # Build
 dist/
