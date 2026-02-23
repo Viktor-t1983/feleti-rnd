@@ -513,7 +513,7 @@ describe('AnalyticsService', () => {
         },
       ] as MockProject[]);
 
-      const comparison = await analyticsService.compareProjects(['proj-1']);
+      const comparison = await analyticsService.compareProjects(['proj-1'], 'user-1');
 
       expect(Array.isArray(comparison)).toBe(true);
       expect(comparison[0]).toHaveProperty('id');
