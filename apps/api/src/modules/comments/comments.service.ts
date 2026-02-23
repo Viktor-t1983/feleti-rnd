@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '../../lib/prisma';
+import { activityLogService } from '../activity-log/activity-log.service';
+import { notificationsService } from '../notifications/notifications.service';
 
 const createCommentSchema = z.object({
   text: z.string().min(1, 'Комментарий не может быть пустым').max(1000, 'Максимум 1000 символов'),
@@ -43,7 +45,13 @@ export class CommentsService {
       throw new Error('Проект не найден');
     }
 
-    return prisma.comment.create({
+    // Получаем информацию об авторе
+    const author = await prisma.user.findUnique({
+      where: { id: validated.authorId },
+      select: { fullName: true },
+    });
+
+    const comment = await prisma.comment.create({
       data: {
         text: validated.text.trim(),
         projectId: validated.projectId,
@@ -59,6 +67,36 @@ export class CommentsService {
         },
       },
     });
+
+    // Отправляем уведомление владельцу проекта (если это не он сам)
+    if (project.ownerId && project.ownerId !== validated.authorId) {
+      notificationsService
+        .create({
+          type: 'COMMENT',
+          title: 'Новый комментарий',
+          message: `${author?.fullName || 'Пользователь'} оставил комментарий в "${project.name}"`,
+          userId: project.ownerId,
+          link: `/projects/${validated.projectId}`,
+        })
+        .catch(() => {
+          // Игнорируем ошибки создания уведомлений
+        });
+
+      // Логируем создание комментария
+      activityLogService
+        .log({
+          action: 'COMMENT_CREATED',
+          entityType: 'Comment',
+          entityId: comment.id,
+          userId: validated.authorId,
+          projectId: validated.projectId,
+        })
+        .catch(() => {
+          // Игнорируем ошибки логирования
+        });
+    }
+
+    return comment;
   }
 
   /**
@@ -78,9 +116,25 @@ export class CommentsService {
       throw new Error('Нет прав для удаления');
     }
 
-    return prisma.comment.delete({
-      where: { id: commentId },
-    });
+    return prisma.comment
+      .delete({
+        where: { id: commentId },
+      })
+      .then((deleted) => {
+        // Логируем удаление комментария
+        activityLogService
+          .log({
+            action: 'COMMENT_DELETED',
+            entityType: 'Comment',
+            entityId: commentId,
+            userId,
+            projectId: comment?.projectId ?? undefined,
+          })
+          .catch(() => {
+            // Игнорируем ошибки логирования
+          });
+        return deleted;
+      });
   }
 
   /**

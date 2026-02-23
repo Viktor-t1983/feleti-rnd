@@ -20,7 +20,9 @@ import type {
 } from './projects.types';
 
 import { prisma } from '../../lib/prisma';
+import { activityLogService } from '../activity-log/activity-log.service';
 import { emailService } from '../email/email.service';
+import { notificationsService } from '../notifications/notifications.service';
 
 export class ProjectsService {
   /**
@@ -161,6 +163,18 @@ export class ProjectsService {
         })
         .catch((err) => logger.warn({ msg: 'Project created email failed', error: err }));
 
+      // Логируем создание проекта
+      activityLogService
+        .log({
+          action: 'PROJECT_CREATED',
+          entityType: 'Project',
+          entityId: project.id,
+          entityName: project.name,
+          userId: project.ownerId,
+          projectId: project.id,
+        })
+        .catch((err) => logger.warn({ msg: 'Activity log failed', error: err }));
+
       return project as ProjectListItem;
     } catch (error: unknown) {
       if (error instanceof Error && 'code' in error && error.code === 'P2002') {
@@ -221,6 +235,32 @@ export class ProjectsService {
       },
     });
 
+    // Логируем обновление проекта
+    if (input.budget !== undefined) {
+      activityLogService
+        .log({
+          action: 'BUDGET_UPDATED',
+          entityType: 'Project',
+          entityId: project.id,
+          entityName: project.name,
+          userId,
+          projectId: project.id,
+          changes: { budget: input.budget },
+        })
+        .catch((err) => logger.warn({ msg: 'Activity log failed', error: err }));
+    }
+
+    activityLogService
+      .log({
+        action: 'PROJECT_UPDATED',
+        entityType: 'Project',
+        entityId: project.id,
+        entityName: project.name,
+        userId,
+        projectId: project.id,
+      })
+      .catch((err) => logger.warn({ msg: 'Activity log failed', error: err }));
+
     return project as ProjectListItem;
   }
 
@@ -250,6 +290,24 @@ export class ProjectsService {
         status: ProjectStatus.CANCELLED,
       },
     });
+
+    // Получаем информацию о проекте для логирования
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: { name: true },
+    });
+
+    // Логируем удаление проекта
+    activityLogService
+      .log({
+        action: 'PROJECT_DELETED',
+        entityType: 'Project',
+        entityId: id,
+        entityName: project?.name,
+        userId,
+        projectId: id,
+      })
+      .catch((err) => logger.warn({ msg: 'Activity log failed', error: err }));
   }
 
   /**
@@ -291,6 +349,29 @@ export class ProjectsService {
             invitedBy: 'Команда проекта',
           })
           .catch((err) => logger.warn({ msg: 'Team invite email failed', error: err }));
+
+        // Создаём уведомление
+        notificationsService
+          .create({
+            type: 'TEAM_INVITE',
+            title: 'Приглашение в команду',
+            message: `Вас добавили в проект "${project.name}"`,
+            userId: input.userId,
+            link: `/projects/${input.projectId}`,
+          })
+          .catch((err) => logger.warn({ msg: 'Team invite notification failed', error: err }));
+
+        // Логируем добавление участника
+        activityLogService
+          .log({
+            action: 'MEMBER_ADDED',
+            entityType: 'ProjectMember',
+            entityId: member.id,
+            entityName: member.user.fullName,
+            userId: input.userId,
+            projectId: input.projectId,
+          })
+          .catch((err) => logger.warn({ msg: 'Activity log failed', error: err }));
       }
 
       return member as ProjectMember;

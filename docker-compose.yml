@@ -10,6 +10,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-feleti_rnd}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
     ports:
       - '5432:5432'
     healthcheck:

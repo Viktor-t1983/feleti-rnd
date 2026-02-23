@@ -7,18 +7,24 @@ import { AdminRoute } from './components/auth/AdminRoute';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { queryClient } from './lib/queryClient';
+import { ActivityLogPage } from './pages/ActivityLogPage';
 import { AdminPage } from './pages/AdminPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { EngineeringConsolePage } from './pages/EngineeringConsolePage';
 import { FinancialCalculatorsPage } from './pages/FinancialCalculatorsPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
+import { ProductClassesPage } from './pages/ProductClassesPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProjectCreatePage } from './pages/ProjectCreatePage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { RulesDashboardPage } from './pages/RulesDashboardPage';
+import { TemplatesPage } from './pages/TemplatesPage';
 import { TestFormPage } from './pages/TestFormPage';
 import { TestPage } from './pages/TestPage';
 import { TestReactPage } from './pages/TestReactPage';
@@ -93,11 +99,59 @@ function AppContent(): JSX.Element {
               }
             />
             <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin"
               element={
                 <AdminRoute>
                   <AdminPage />
                 </AdminRoute>
+              }
+            />
+            <Route
+              path="/activity"
+              element={
+                <ProtectedRoute>
+                  <ActivityLogPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/templates"
+              element={
+                <ProtectedRoute>
+                  <TemplatesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/engineering"
+              element={
+                <ProtectedRoute>
+                  <EngineeringConsolePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/engineering/product-classes"
+              element={
+                <ProtectedRoute>
+                  <ProductClassesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/engineering/rules"
+              element={
+                <ProtectedRoute>
+                  <RulesDashboardPage />
+                </ProtectedRoute>
               }
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

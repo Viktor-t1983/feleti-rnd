@@ -11,32 +11,32 @@ git clone <url>
 cd feleti-rnd
 ```
 
-2. **Установи зависимости:**
+1. **Установи зависимости:**
 
 ```bash
 npm install
 ```
 
-3. **Настрой окружение:**
+1. **Настрой окружение:**
 
 ```bash
 cp apps/api/.env.example apps/api/.env
 # Отредактируй apps/api/.env
 ```
 
-4. **Запусти Docker:**
+1. **Запусти Docker:**
 
 ```bash
 npm run docker:up
 ```
 
-5. **Запусти миграции:**
+1. **Запусти миграции:**
 
 ```bash
 npm run prisma:migrate
 ```
 
-6. **Запусти dev серверы:**
+1. **Запусти dev серверы:**
 
 ```bash
 npm run dev

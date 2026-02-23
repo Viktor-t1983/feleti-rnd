@@ -4,10 +4,7 @@ WORKDIR /app
 
 # Build аргументы для DATABASE_URL
 ARG DATABASE_URL
-ARG POSTGRES_USER
-ARG POSTGRES_PASSWORD
-ARG POSTGRES_DB
-ENV DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+ENV DATABASE_URL=${DATABASE_URL}
 
 # Увеличиваем память для Node.js
 ENV NODE_OPTIONS="--max-old-space-size=4096"
@@ -38,6 +35,7 @@ COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/node_modules ./node_modules
 COPY --from=builder /app/apps/api/package*.json ./
 COPY --from=builder /app/apps/api/prisma ./prisma
+COPY --from=builder /app/apps/api/src ./src
 
 # Права
 RUN chown -R appuser:appgroup /app

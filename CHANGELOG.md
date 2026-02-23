@@ -2,6 +2,58 @@
 
 Все важные изменения в проекте FELETI R&D.
 
+## [1.1.0] - 2026-02-20
+
+### ✨ Added - Engineering Platform v1.0
+
+#### Backend
+
+- ✅ Product Classes Framework
+- ✅ Engineering Rules Engine с DSL
+- ✅ Validation Gates System
+- ✅ Calculation Blocks с Formula Evaluator
+- ✅ Knowledge Graph с traceability
+- ✅ AI Agents с DeepSeek интеграцией
+- ✅ Agent Memory Layer
+- ✅ Context Management
+
+#### Frontend
+
+- ✅ Engineering Console
+- ✅ Product Classes UI
+- ✅ Rules Dashboard
+- ✅ Gates Progress component
+- ✅ AI Engineering Assistant
+
+#### Database
+
+- ✅ 13 новых таблиц
+- ✅ Composite indexes
+- ✅ Граф связей
+
+#### Tests
+
+- ✅ Integration tests
+- ✅ E2E flow tests
+- ✅ Seed verification tests
+
+#### Documentation
+
+- ✅ Engineering Platform guide
+- ✅ API documentation
+- ✅ Architecture overview
+
+#### Technical Details
+
+- ✅ TypeScript strict mode
+- ✅ Clean Architecture
+- ✅ Product-Agnostic Design
+- ✅ OpenAI-compatible LLM interface
+- ✅ Formula Evaluator (безопасный)
+- ✅ Rule DSL
+
+---
+
 ## [1.0.0] - 2026-02-17
 
 ### ✨ Добавленные функции

@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import { mkdir, unlink, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { prisma } from '../../lib/prisma';
+import { activityLogService } from '../activity-log/activity-log.service';
 
 // Разрешённые типы файлов
 const ALLOWED_MIME_TYPES = [
@@ -87,25 +88,42 @@ export class AttachmentsService {
     await writeFile(filePath, data.buffer);
 
     // Сохраняем в БД
-    return prisma.attachment.create({
-      data: {
-        filename: uniqueName,
-        originalName: data.originalName,
-        mimeType: data.mimeType,
-        size: data.size,
-        path: filePath,
-        projectId: data.projectId,
-        uploadedById: data.userId,
-      },
-      include: {
-        uploadedBy: {
-          select: {
-            fullName: true,
-            username: true,
+    return prisma.attachment
+      .create({
+        data: {
+          filename: uniqueName,
+          originalName: data.originalName,
+          mimeType: data.mimeType,
+          size: data.size,
+          path: filePath,
+          projectId: data.projectId,
+          uploadedById: data.userId,
+        },
+        include: {
+          uploadedBy: {
+            select: {
+              fullName: true,
+              username: true,
+            },
           },
         },
-      },
-    });
+      })
+      .then((attachment) => {
+        // Логируем загрузку файла
+        activityLogService
+          .log({
+            action: 'FILE_UPLOADED',
+            entityType: 'Attachment',
+            entityId: attachment.id,
+            entityName: data.originalName,
+            userId: data.userId,
+            projectId: data.projectId,
+          })
+          .catch(() => {
+            // Игнорируем ошибки логирования
+          });
+        return attachment;
+      });
   }
 
   /**

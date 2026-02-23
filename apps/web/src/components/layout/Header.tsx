@@ -1,3 +1,4 @@
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInstallPWA } from '@/hooks/useInstallPWA';
@@ -67,6 +68,30 @@ export function Header() {
             >
               📅 Календарь
             </Link>
+            <Link
+              to="/analytics"
+              className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+            >
+              📊 Аналитика
+            </Link>
+            <Link
+              to="/templates"
+              className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+            >
+              🎨 Шаблоны
+            </Link>
+            <Link
+              to="/activity"
+              className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+            >
+              📋 История
+            </Link>
+            <Link
+              to="/engineering"
+              className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+            >
+              ⚙️ Engineering
+            </Link>
             {user?.role === 'Admin' && (
               <Link
                 to="/admin"
@@ -101,7 +126,12 @@ export function Header() {
             {isInstalled && (
               <span className="text-xs text-green-500 dark:text-green-400 hidden sm:flex items-center gap-1">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Установлено
               </span>
@@ -109,6 +139,9 @@ export function Header() {
 
             {/* Theme Toggle */}
             <ThemeToggle />
+
+            {/* Notification Bell */}
+            <NotificationBell />
 
             {/* Search Button */}
             <button

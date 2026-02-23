@@ -55,7 +55,12 @@ export const HELMET_CONFIG: HelmetConfig = {
       fontSrc: ["'self'", 'fonts.gstatic.com'],
       imgSrc: ["'self'", 'data:', 'https://'],
       scriptSrc: ["'self'"],
-      connectSrc: ["'self'", 'https://api.feleti.example.com'],
+      connectSrc: [
+        "'self'",
+        'http://localhost:3001',
+        'http://localhost:8000',
+        'https://api.feleti.example.com',
+      ],
     },
   },
   hidePoweredBy: true,

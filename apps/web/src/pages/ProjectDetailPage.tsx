@@ -7,10 +7,11 @@ import { type UseMutationResult } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { CommentSection } from '../components/comments/CommentSection';
-import { ProjectForm } from '../components/projects/ProjectForm';
 import { FileUpload } from '../components/attachments/FileUpload';
 import { FilesList } from '../components/attachments/FilesList';
+import { CommentSection } from '../components/comments/CommentSection';
+import { ProjectGatesProgress } from '../components/engineering/ProjectGatesProgress';
+import { ProjectForm } from '../components/projects/ProjectForm';
 import {
   useDeleteProject,
   useProject,
@@ -295,21 +296,26 @@ export function ProjectDetailPage(): JSX.Element {
         <CommentSection projectId={project.id} />
 
         {/* Files */}
-        <div className="bg-white dark:bg-gray-800
+        <div
+          className="bg-white dark:bg-gray-800
           rounded-2xl border border-gray-200
-          dark:border-gray-700 p-6 mt-6">
-
-          <h3 className="text-lg font-semibold
+          dark:border-gray-700 p-6 mt-6"
+        >
+          <h3
+            className="text-lg font-semibold
             text-gray-900 dark:text-white mb-6
-            flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none"
-              viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round"
-                strokeLinejoin="round" strokeWidth={2}
+            flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
                 d="M15.172 7l-6.586 6.586a2 2 0 102.828
                 2.828l6.414-6.586a4 4 0 00-5.656-5.656
                 l-6.415 6.585a6 6 0 108.486 8.486L20.5
-                13" />
+                13"
+              />
             </svg>
             Файлы проекта
           </h3>
@@ -320,6 +326,11 @@ export function ProjectDetailPage(): JSX.Element {
           {/* Список файлов */}
           <div className="mt-6">
             <FilesList projectId={project.id} />
+          </div>
+
+          {/* Validation Gates Progress */}
+          <div className="mt-6">
+            <ProjectGatesProgress projectId={project.id} />
           </div>
         </div>
       </div>

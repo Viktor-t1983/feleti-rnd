@@ -45,4 +45,12 @@ export const config = {
   frontendUrl: process.env['FRONTEND_URL'] || 'http://localhost',
   isProduction: process.env['NODE_ENV'] === 'production',
   isDevelopment: process.env['NODE_ENV'] === 'development',
+  deepseek: {
+    apiKey: process.env['DEEPSEEK_API_KEY'] || '',
+    baseURL: process.env['DEEPSEEK_BASE_URL'] || 'https://api.deepseek.com',
+    model: process.env['DEEPSEEK_MODEL'] || 'deepseek-chat',
+  },
+  calcEngine: {
+    url: process.env['CALC_ENGINE_URL'] || 'http://localhost:8000',
+  },
 } as const;

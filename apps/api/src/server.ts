@@ -2,7 +2,13 @@ import cookie from '@fastify/cookie';
 import Fastify from 'fastify';
 import fp from 'fastify-plugin';
 
+import { aiAgentsRoutes } from './modules/ai-agents/ai-agents.routes';
 import { authRoutes } from './modules/auth/auth.routes';
+import { calculationsRoutes } from './modules/engineering/calculations/calculations.routes';
+import { knowledgeRoutes } from './modules/engineering/knowledge/knowledge.routes';
+import { productClassesRoutes } from './modules/engineering/product-classes/product-classes.routes';
+import { rulesRoutes } from './modules/engineering/rules/rules.routes';
+import { validationRoutes } from './modules/engineering/validation/validation.routes';
 import { projectsRoutes } from './modules/projects/projects.routes';
 import { searchRoutes } from './modules/search/search.routes';
 import { usersRoutes } from './modules/users/users.routes';
@@ -79,18 +85,42 @@ void fastify.register(usersRoutes, { prefix: '/api' });
 // Register search routes
 void fastify.register(searchRoutes, { prefix: '/api' });
 
+// Register knowledge routes
+void fastify.register(knowledgeRoutes, { prefix: '/api' });
+
+// Register rules routes
+void fastify.register(rulesRoutes, { prefix: '/api' });
+
+// Register validation routes
+void fastify.register(validationRoutes, { prefix: '/api' });
+
+// Register calculations routes
+void fastify.register(calculationsRoutes, { prefix: '/api' });
+
+// Register AI Agents routes
+void fastify.register(aiAgentsRoutes, { prefix: '/api' });
+
+// Register product-classes routes
+void fastify.register(productClassesRoutes, { prefix: '/api' });
+
+import { activityLogRoutes } from './modules/activity-log/activity-log.routes';
 import { adminRoutes } from './modules/admin/admin.routes';
 import { analyticsRoutes } from './modules/analytics';
 import { attachmentsRoutes } from './modules/attachments/attachments.routes';
 import { calendarRoutes } from './modules/calendar/calendar.routes';
 import { commentsRoutes } from './modules/comments/comments.routes';
+import { notificationsRoutes } from './modules/notifications/notifications.routes';
 import { reportsRoutes } from './modules/reports/reports.routes';
+import { templatesRoutes } from './modules/templates/templates.routes';
 void fastify.register(attachmentsRoutes, { prefix: '/api' });
 void fastify.register(analyticsRoutes, { prefix: '/api' });
 void fastify.register(reportsRoutes, { prefix: '/api' });
 void fastify.register(calendarRoutes, { prefix: '/api' });
 void fastify.register(commentsRoutes, { prefix: '/api' });
+void fastify.register(notificationsRoutes, { prefix: '/api' });
 void fastify.register(adminRoutes, { prefix: '/api' });
+void fastify.register(activityLogRoutes, { prefix: '/api' });
+void fastify.register(templatesRoutes, { prefix: '/api' });
 
 // Health check endpoint
 fastify.get('/health', () => {

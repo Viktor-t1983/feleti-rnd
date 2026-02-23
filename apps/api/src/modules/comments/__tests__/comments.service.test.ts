@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CommentsService } from '../comments.service';
 
 vi.mock('../../../lib/prisma', () => ({
@@ -14,9 +14,9 @@ vi.mock('../../../lib/prisma', () => ({
           author: {
             id: '550e8400-e29b-41d4-a716-446655440002',
             fullName: 'Тест Пользователь',
-            username: 'test'
-          }
-        }
+            username: 'test',
+          },
+        },
       ]),
       create: vi.fn().mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440004',
@@ -27,13 +27,13 @@ vi.mock('../../../lib/prisma', () => ({
         author: {
           id: '550e8400-e29b-41d4-a716-446655440002',
           fullName: 'Тест',
-          username: 'test'
-        }
+          username: 'test',
+        },
       }),
       findUnique: vi.fn().mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440003',
         authorId: '550e8400-e29b-41d4-a716-446655440002',
-        text: 'Тест'
+        text: 'Тест',
       }),
       delete: vi.fn().mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440003' }),
       count: vi.fn().mockResolvedValue(1),
@@ -41,10 +41,23 @@ vi.mock('../../../lib/prisma', () => ({
     project: {
       findUnique: vi.fn().mockResolvedValue({
         id: '550e8400-e29b-41d4-a716-446655440001',
-        name: 'Тест проект'
-      })
-    }
-  }
+        name: 'Тест проект',
+        ownerId: '550e8400-e29b-41d4-a716-446655440099',
+      }),
+    },
+    user: {
+      findUnique: vi.fn().mockResolvedValue({
+        id: '550e8400-e29b-41d4-a716-446655440002',
+        fullName: 'Тест Пользователь',
+      }),
+    },
+  },
+}));
+
+vi.mock('../notifications/notifications.service', () => ({
+  notificationsService: {
+    create: vi.fn().mockResolvedValue({}),
+  },
 }));
 
 describe('CommentsService', () => {
@@ -79,26 +92,19 @@ describe('CommentsService', () => {
   });
 
   it('should delete a comment', async () => {
-    const result = await service.deleteComment(
-      COMMENT_ID,
-      AUTHOR_ID,
-      false
-    );
+    const result = await service.deleteComment(COMMENT_ID, AUTHOR_ID, false);
     expect(result).toHaveProperty('id');
   });
 
   it('should not delete comment of another user', async () => {
     const { prisma } = await import('../../../lib/prisma');
-    vi.mocked(prisma.comment.findUnique)
-      .mockResolvedValueOnce({
-        id: COMMENT_ID,
-        authorId: OTHER_USER_ID,
-        text: 'Чужой'
-      } as never);
+    vi.mocked(prisma.comment.findUnique).mockResolvedValueOnce({
+      id: COMMENT_ID,
+      authorId: OTHER_USER_ID,
+      text: 'Чужой',
+    } as never);
 
-    await expect(
-      service.deleteComment(COMMENT_ID, AUTHOR_ID, false)
-    ).rejects.toThrow();
+    await expect(service.deleteComment(COMMENT_ID, AUTHOR_ID, false)).rejects.toThrow();
   });
 
   it('should validate comment text length', async () => {
@@ -118,25 +124,19 @@ describe('CommentsService', () => {
 
   it('should allow admin to delete any comment', async () => {
     const { prisma } = await import('../../../lib/prisma');
-    vi.mocked(prisma.comment.findUnique)
-      .mockResolvedValueOnce({
-        id: COMMENT_ID,
-        authorId: OTHER_USER_ID,
-        text: 'Чужой комментарий'
-      } as never);
+    vi.mocked(prisma.comment.findUnique).mockResolvedValueOnce({
+      id: COMMENT_ID,
+      authorId: OTHER_USER_ID,
+      text: 'Чужой комментарий',
+    } as never);
 
-    const result = await service.deleteComment(
-      COMMENT_ID,
-      AUTHOR_ID,
-      true
-    );
+    const result = await service.deleteComment(COMMENT_ID, AUTHOR_ID, true);
     expect(result).toHaveProperty('id');
   });
 
   it('should throw when project not found', async () => {
     const { prisma } = await import('../../../lib/prisma');
-    vi.mocked(prisma.project.findUnique)
-      .mockResolvedValueOnce(null);
+    vi.mocked(prisma.project.findUnique).mockResolvedValueOnce(null);
 
     await expect(
       service.createComment({

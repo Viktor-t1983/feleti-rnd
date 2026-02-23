@@ -75,24 +75,25 @@ const getMockedPrisma = (): {
   user: {
     findUnique: ReturnType<typeof vi.fn>;
   };
-} => prisma as unknown as {
-  project: {
-    findMany: ReturnType<typeof vi.fn>;
-    findUnique: ReturnType<typeof vi.fn>;
-    create: ReturnType<typeof vi.fn>;
-    update: ReturnType<typeof vi.fn>;
-    delete: ReturnType<typeof vi.fn>;
-    count: ReturnType<typeof vi.fn>;
+} =>
+  prisma as unknown as {
+    project: {
+      findMany: ReturnType<typeof vi.fn>;
+      findUnique: ReturnType<typeof vi.fn>;
+      create: ReturnType<typeof vi.fn>;
+      update: ReturnType<typeof vi.fn>;
+      delete: ReturnType<typeof vi.fn>;
+      count: ReturnType<typeof vi.fn>;
+    };
+    projectMember: {
+      findMany: ReturnType<typeof vi.fn>;
+      create: ReturnType<typeof vi.fn>;
+      delete: ReturnType<typeof vi.fn>;
+    };
+    user: {
+      findUnique: ReturnType<typeof vi.fn>;
+    };
   };
-  projectMember: {
-    findMany: ReturnType<typeof vi.fn>;
-    create: ReturnType<typeof vi.fn>;
-    delete: ReturnType<typeof vi.fn>;
-  };
-  user: {
-    findUnique: ReturnType<typeof vi.fn>;
-  };
-};
 
 // Mock Prisma Singleton
 vi.mock('@/lib/prisma', () => ({
@@ -115,6 +116,13 @@ vi.mock('@/lib/prisma', () => ({
     },
   },
   $disconnect: vi.fn(),
+}));
+
+// Mock NotificationsService
+vi.mock('../notifications/notifications.service', () => ({
+  notificationsService: {
+    create: vi.fn().mockResolvedValue({}),
+  },
 }));
 
 describe('ProjectsService', () => {

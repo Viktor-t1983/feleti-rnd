@@ -48,6 +48,19 @@ model User {
   authoredLessons LessonLearned[]
   authoredVocs  VoiceOfCustomer[]
   uploadedAttachments Attachment[] @relation("UploadedAttachments")
+  notifications Notification[]
+  activityLogs ActivityLog[]
+  createdTemplates ProjectTemplate[]
+
+  // Engineering Platform Relations
+  knowledgeNodes         KnowledgeNode[]
+  acknowledgedViolations RuleViolation[]  @relation("AcknowledgedViolations")
+  resolvedViolations    RuleViolation[]  @relation("ResolvedViolations")
+  waivedViolations      RuleViolation[]  @relation("WaivedViolations")
+  validatedGates        GateValidation[] @relation("ValidatedGates")
+  waivedGates           GateValidation[] @relation("WaivedGates")
+  calculations          Calculation[]
+  agentMemories         AgentMemory[]
 
   @@index([email])
   @@index([roleId])
@@ -102,8 +115,19 @@ model Project {
   lessonsLearned  LessonLearned[]
   vocs            VoiceOfCustomer[]
   members         ProjectMember[]
+  activityLogs    ActivityLog[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  // Engineering Platform Relations
+  productClassId   String?
+  productClass    ProductClass?     @relation(fields: [productClassId], references: [id])
+  productParams   Json?              // Технические параметры продукта
+  knowledgeNodes  KnowledgeNode[]
+  ruleViolations  RuleViolation[]
+  gateValidations GateValidation[]
+  calculations    Calculation[]
+  agentMemories   AgentMemory[]
 
   @@index([code])
   @@index([ownerId])
@@ -298,3 +322,591 @@ model Attachment {
   
   @@index([projectId])
 }
+
+model Notification {
+  id        String   @id @default(uuid())
+  type      String   // TEAM_INVITE, COMMENT, DEADLINE, BUDGET, PROJECT_CREATED
+  title     String
+  message   String
+  link      String?  // Ссылка на проект/комментарий
+  read      Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, read])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  action      String   // PROJECT_CREATED, MEMBER_ADDED, etc.
+  entityType  String   // Project, User, Comment, Attachment
+  entityId    String
+  entityName  String?  // Название проекта/файла для удобства
+  changes     Json?    // Что изменилось (до/после)
+  userId      String
+  projectId   String?  // Опционально - для фильтра
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  
+  @@index([userId])
+  @@index([projectId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ProjectTemplate {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  defaultStage     String   @default("IDEA")
+  estimatedBudget  Decimal? @db.Decimal(15, 2)
+  estimatedDays    Int?
+  teamSize         Int?
+  checklist        Json?
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  createdBy        User     @relation(fields: [createdById], references: [id])
+  
+  @@index([name])
+}
+
+// ==========================================
+// ENGINEERING PLATFORM v1.0
+// Product-Agnostic Architecture
+// ==========================================
+
+// ==========================================
+// 1. PRODUCT CLASSES FRAMEWORK
+// ==========================================
+
+/// Класс продукта (абстрактный тип)
+/// Примеры: "Thermal Processing", "Mechanical Processing", "Hygiene Systems"
+model ProductClass {
+  id                    String    @id @default(uuid())
+  code                  String    @unique // "THERMAL", "MECH", "HYGIENE"
+  name                  String    // "Термическая обработка"
+  description           String?   @db.Text
+  icon                  String?   // emoji или иконка
+  category              String    // "processing", "infrastructure", "systems"
+  
+  // Метаданные класса
+  metadata              Json?     // Дополнительные параметры
+  
+  // Типовые характеристики (JSON Templates)
+  typicalRequirements   Json?     // Шаблоны требований
+  calculationBlockRefs  Json?     // Ссылки на расчётные блоки
+  validationCriteria    Json?     // Критерии валидации
+  kpiMetrics           Json?     // KPI метрики
+  
+  // Иерархия
+  parentId              String?
+  parent                ProductClass?  @relation("ClassHierarchy", fields: [parentId], references: [id])
+  children              ProductClass[] @relation("ClassHierarchy")
+  
+  // Статус
+  active                Boolean   @default(true)
+  version               String    @default("1.0")
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Relations
+  projects              Project[]
+  knowledgeNodes        KnowledgeNode[]
+  engineeringRules      EngineeringRule[]
+  validationGates       ValidationGate[]
+  calculationBlocks     CalculationBlock[]
+  
+  @@index([code])
+  @@index([category])
+  @@index([active])
+}
+
+// ==========================================
+// 2. ENGINEERING KNOWLEDGE GRAPH
+// ==========================================
+
+/// Типы узлов знаний
+enum KnowledgeNodeType {
+  REQUIREMENT      // Требование
+  SOLUTION         // Решение
+  PROBLEM          // Проблема
+  DECISION         // Инженерное решение
+  RISK             // Риск
+  COMPONENT        // Компонент/узел
+  PRINCIPLE        // Инженерный принцип
+  CONSTRAINT       // Ограничение
+  LESSON_LEARNED   // Извлечённый урок
+}
+
+/// Узел в графе знаний
+model KnowledgeNode {
+  id                String              @id @default(uuid())
+  type              KnowledgeNodeType
+  
+  // Контент
+  title             String
+  content           String              @db.Text
+  summary           String?             // Краткое описание
+  tags              String[]            // Теги для поиска
+  
+  // Метаданные
+  metadata          Json?               // Дополнительная информация
+  confidence        Float               @default(1.0) // 0.0 - 1.0
+  importance        String              @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  
+  // Контекст
+  productClassId    String?
+  productClass      ProductClass?       @relation(fields: [productClassId], references: [id])
+  
+  projectId         String?
+  project           Project?            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Versioning
+  version           Int                 @default(1)
+  supersededById    String?             @unique
+  supersededBy      KnowledgeNode?      @relation("NodeVersion", fields: [supersededById], references: [id])
+  supersedes        KnowledgeNode?      @relation("NodeVersion")
+  
+  // Автор
+  createdById       String
+  createdBy         User                @relation(fields: [createdById], references: [id])
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Граф связей
+  relationsFrom     KnowledgeRelation[] @relation("FromNode")
+  relationsTo       KnowledgeRelation[] @relation("ToNode")
+  
+  @@index([type])
+  @@index([productClassId])
+  @@index([projectId])
+  @@index([createdAt])
+}
+
+/// Типы связей в графе
+enum RelationType {
+  CAUSES           // Вызывает
+  SOLVES           // Решает
+  REQUIRES         // Требует
+  VALIDATES        // Validates
+  DEPENDS_ON       // Зависит от
+  CONFLICTS_WITH   // Конфликтует с
+  IMPLEMENTS       // Реализует
+  DERIVES_FROM     // Происходит от
+  RELATES_TO       // Связано с
+}
+
+/// Связь между узлами знаний
+model KnowledgeRelation {
+  id                String        @id @default(uuid())
+  type              RelationType
+  
+  // Связь
+  fromNodeId        String
+  fromNode          KnowledgeNode @relation("FromNode", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  
+  toNodeId          String
+  toNode            KnowledgeNode @relation("ToNode", fields: [toNodeId], references: [id], onDelete: Cascade)
+  
+  // Метаданные связи
+  strength          Float         @default(1.0) // 0.0 - 1.0
+  confidence        Float         @default(1.0) // 0.0 - 1.0
+  description       String?       // Описание связи
+  metadata          Json?
+  
+  createdAt         DateTime      @default(now())
+  
+  @@unique([fromNodeId, toNodeId, type])
+  @@index([fromNodeId])
+  @@index([toNodeId])
+  @@index([type])
+}
+
+// ==========================================
+// 3. RULES ENGINE
+// ==========================================
+
+/// Категории правил
+enum RuleCategory {
+  THERMAL          // Тепловые процессы
+  AERODYNAMIC      // Аэродинамика
+  MECHANICAL       // Механика
+  HYGIENE          // Гигиена
+  SAFETY           // Безопасность
+  ELECTRICAL       // Электрика
+  PROCESS          // Процессы
+  QUALITY          // Качество
+  CUSTOM           // Пользовательские
+}
+
+/// Уровень риска при нарушении правила
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/// Действие при нарушении
+enum RuleAction {
+  WARN             // Предупреждение
+  BLOCK            // Блокировка
+  LOG              // Только логирование
+  NOTIFY           // Уведомление
+}
+
+/// Инженерное правило
+model EngineeringRule {
+  id                String        @id @default(uuid())
+  code              String        @unique // "THERM-001", "AERO-002"
+  category          RuleCategory
+  
+  // Описание
+  name              String
+  description       String        @db.Text
+  rationale         String?       @db.Text // Обоснование правила
+  
+  // Условие (JSON DSL)
+  condition         Json          // Структура условия
+  
+  // Параметры
+  parameters        Json?         // Описание входных параметров
+  
+  // Результат нарушения
+  riskLevel         RiskLevel
+  action            RuleAction
+  message           String        @db.Text
+  recommendation    String?       @db.Text // Рекомендация по исправлению
+  
+  // Область применения
+  productClassId    String?
+  productClass      ProductClass? @relation(fields: [productClassId], references: [id])
+  
+  scope             String        @default("PROJECT") // PROJECT, GATE, CALCULATION
+  
+  // Статус
+  active            Boolean       @default(true)
+  version           String        @default("1.0")
+  
+  // Метаданные
+  tags              String[]
+  references        Json?         // Ссылки на стандарты, документы
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  violations        RuleViolation[]
+  
+  @@index([category])
+  @@index([active])
+  @@index([riskLevel])
+}
+
+/// Статус нарушения правила
+enum ViolationStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  WAIVED         // Отменено (с обоснованием)
+}
+
+/// Нарушение правила
+model RuleViolation {
+  id                String           @id @default(uuid())
+  
+  ruleId            String
+  rule              EngineeringRule  @relation(fields: [ruleId], references: [id])
+  
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Контекст нарушения
+  context           Json             // Где произошло
+  params            Json             // Параметры, вызвавшие нарушение
+  
+  // Результат проверки
+  triggered         Boolean
+  severity          RiskLevel
+  calculatedRisk    Float?           // Расчётный уровень риска 0-1
+  
+  // Статус
+  status            ViolationStatus  @default(OPEN)
+  acknowledgedAt    DateTime?
+  acknowledgedById  String?
+  acknowledgedBy    User?            @relation("AcknowledgedViolations", fields: [acknowledgedById], references: [id])
+  
+  resolvedAt        DateTime?
+  resolvedById      String?
+  resolvedBy        User?            @relation("ResolvedViolations", fields: [resolvedById], references: [id])
+  
+  resolution        String?          @db.Text
+  
+  // Waiver (отмена с обоснованием)
+  waived            Boolean          @default(false)
+  waiverReason      String?          @db.Text
+  waivedById        String?
+  waivedBy          User?            @relation("WaivedViolations", fields: [waivedById], references: [id])
+  
+  createdAt         DateTime         @default(now())
+  
+  @@index([projectId])
+  @@index([status])
+  @@index([severity])
+}
+
+// ==========================================
+// 4. VALIDATION GATES SYSTEM
+// ==========================================
+
+/// Контрольная точка (Gate)
+model ValidationGate {
+  id                String        @id @default(uuid())
+  code              String        @unique // "GATE-1", "GATE-2"
+  name              String        // "Product Definition Complete"
+  description       String        @db.Text
+  
+  // Порядок и иерархия
+  order             Int           // Порядковый номер gate
+  phase             String        // "PLANNING", "DESIGN", "VALIDATION", "RELEASE"
+  
+  // Критерии прохождения (JSON)
+  criteria          Json          // Список проверок
+  passingScore      Float         @default(0.8) // Минимальный балл для прохождения
+  
+  // Область применения
+  productClassId    String?
+  productClass      ProductClass? @relation(fields: [productClassId], references: [id])
+  
+  // Опции
+  blockOnFail       Boolean       @default(true)
+  allowWaiver       Boolean       @default(false)
+  requiresApproval  Boolean       @default(false)
+  
+  // Статус
+  active            Boolean       @default(true)
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  validations       GateValidation[]
+  
+  @@index([order])
+  @@index([active])
+  @@index([phase])
+}
+
+/// Результат прохождения Gate
+model GateValidation {
+  id                String         @id @default(uuid())
+  
+  gateId            String
+  gate              ValidationGate @relation(fields: [gateId], references: [id])
+  
+  projectId         String
+  project           Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Результат
+  passed            Boolean
+  score             Float          // 0.0 - 1.0
+  
+  // Детали проверки
+  results           Json           // Результаты по каждому критерию
+  blockers          Json?          // Что блокирует прохождение
+  warnings          Json?          // Предупреждения
+  
+  // Waiver
+  waived            Boolean        @default(false)
+  waiverReason      String?        @db.Text
+  waivedById        String?
+  waivedBy          User?          @relation("WaivedGates", fields: [waivedById], references: [id])
+  
+  // Валидация
+  validatedById     String
+  validatedBy       User           @relation("ValidatedGates", fields: [validatedById], references: [id])
+  
+  validatedAt       DateTime       @default(now())
+  
+  @@index([projectId])
+  @@index([passed])
+  @@index([validatedAt])
+}
+
+// ==========================================
+// 5. CALCULATION BLOCKS SYSTEM
+// ==========================================
+
+/// Категории расчётов
+enum CalculationCategory {
+  THERMAL          // Тепловые расчёты
+  AERODYNAMIC      // Аэродинамические
+  MECHANICAL       // Механические
+  ELECTRICAL       // Электрические
+  HYDRAULIC        // Гидравлические
+  ECONOMIC         // Экономические
+  CUSTOM           // Пользовательские
+}
+
+/// Расчётный блок (шаблон)
+model CalculationBlock {
+  id                String               @id @default(uuid())
+  code              String               @unique // "THERM-HEAT-BALANCE"
+  category          CalculationCategory
+  
+  // Описание
+  name              String
+  description       String               @db.Text
+  purpose           String?              @db.Text
+  
+  // Схема входов/выходов (JSON Schema)
+  inputSchema       Json                 // Описание входных параметров
+  outputSchema      Json                 // Описание выходных параметров
+  
+  // Формулы и логика
+  formulae          Json                 // Формулы в JSON
+  algorithm         String?              @db.Text // Описание алгоритма
+  
+  // Валидация
+  validationRules   Json?                // Правила валидации результатов
+  
+  // Область применения
+  productClassId    String?
+  productClass      ProductClass?        @relation(fields: [productClassId], references: [id])
+  
+  // Метаданные
+  units             Json?                // Единицы измерения
+  references        Json?                // Ссылки на источники
+  accuracy          String?              // Точность расчёта
+  
+  // Статус
+  active            Boolean              @default(true)
+  version           String               @default("1.0")
+  
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  
+  // Relations
+  calculations      Calculation[]
+  
+  @@index([category])
+  @@index([active])
+}
+
+/// Статус расчёта
+enum CalculationStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  WARNING
+}
+
+/// Результат выполнения расчёта
+model Calculation {
+  id                String             @id @default(uuid())
+  
+  blockId           String
+  block             CalculationBlock   @relation(fields: [blockId], references: [id])
+  
+  projectId         String
+  project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Входные данные
+  inputs            Json
+  
+  // Результаты
+  outputs           Json?
+  
+  // Статус
+  status            CalculationStatus
+  progress          Float              @default(0) // 0-100%
+  
+  // Ошибки и предупреждения
+  errors            Json?
+  warnings          Json?
+  
+  // Валидация результатов
+  validated         Boolean            @default(false)
+  validationResults Json?
+  
+  // Метаданные выполнения
+  executionTime     Int?               // мс
+  metadata          Json?
+  
+  // Исполнитель
+  executedById      String
+  executedBy        User               @relation(fields: [executedById], references: [id])
+  
+  createdAt         DateTime           @default(now())
+  completedAt       DateTime?
+  
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ==========================================
+// 6. AI AGENTS MEMORY & CONTEXT
+// ==========================================
+
+/// Типы AI агентов
+enum AgentType {
+  PORTFOLIO          // Анализ портфеля
+  PRODUCT_DEFINITION // Определение продукта
+  REQUIREMENTS       // Работа с требованиями
+  ARCHITECTURE       // Архитектурные решения
+  VALIDATION         // Валидация
+  CALCULATION        // Помощь с расчётами
+  OPTIMIZATION       // Оптимизация
+  RISK_ANALYSIS      // Анализ рисков
+}
+
+/// Память AI-агента
+model AgentMemory {
+  id                String     @id @default(uuid())
+  agentType         AgentType
+  
+  // Контекст
+  projectId         String?
+  project           Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  userId            String?
+  user              User?      @relation(fields: [userId], references: [id])
+  
+  productClassId    String?
+  
+  // Данные памяти
+  context           Json       // Контекст работы
+  decisions         Json?      // Принятые решения
+  learnings         Json?      // Извлечённые уроки
+  interactions      Json?      // История взаимодействий
+  
+  // Метаданные
+  sessionId         String?    // ID сессии
+  version           Int        @default(1)
+  
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  expiresAt         DateTime?  // Время жизни памяти
+  
+  @@index([agentType])
+  @@index([projectId])
+  @@index([userId])
+  @@index([sessionId])
+}
+
+// ==========================================
+// ОБНОВЛЕНИЯ СУЩЕСТВУЮЩИХ МОДЕЛЕЙ
+// ==========================================
+// Note: User and Project models are updated with Engineering Platform relations
+// These relations are added to the existing models above:
