@@ -17,6 +17,7 @@ vi.mock('@prisma/client', () => {
   const mockPrisma = {
     user: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
     },
     role: {
@@ -35,10 +36,7 @@ import {
   ValidationError,
 } from '../../../errors';
 import { comparePassword, hashPassword, validatePassword } from '../../../utils/password';
-import {
-  generateAccessToken,
-  generateRefreshToken,
-} from '../../../utils/token';
+import { generateAccessToken, generateRefreshToken } from '../../../utils/token';
 import { AuthService } from '../auth.service';
 
 const mockHashPassword = hashPassword as Mock;
@@ -131,7 +129,10 @@ describe('AuthService', () => {
     it('should throw ConflictError if email already exists', async () => {
       // Arrange
       mockValidatePassword.mockReturnValue({ isValid: true, errors: [] });
-      mockPrisma.user.findUnique.mockResolvedValueOnce({ id: 'existing-user' });
+      mockPrisma.user.findFirst.mockResolvedValueOnce({
+        id: 'existing-user',
+        email: validUserData.email,
+      });
       mockPrisma.role.findUnique.mockResolvedValueOnce({ id: 'role-123', name: 'User' });
 
       // Act & Assert
@@ -348,5 +349,4 @@ describe('AuthService', () => {
       await expect(AuthService.getUserById('non-existent-id')).rejects.toThrow(NotFoundError);
     });
   });
-
 });

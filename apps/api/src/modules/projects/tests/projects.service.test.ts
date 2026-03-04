@@ -482,12 +482,17 @@ describe('ProjectsService', () => {
           stage: ProjectStage.IDEA,
           ownerId: 'user1',
           budget: undefined,
+          description: 'Test description',
+          priority: 'medium',
+          spent: 0,
+          status: 'ACTIVE',
         }) as unknown,
         include: {
           owner: {
             select: {
               id: true,
               fullName: true,
+              email: true,
             },
           },
         },

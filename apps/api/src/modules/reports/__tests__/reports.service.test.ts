@@ -4,9 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { ReportsService } = require('../../reports.service');
+import { ReportsService } from '../reports.service';
 
 describe('ReportsService', () => {
   describe('generateProjectPDF', () => {

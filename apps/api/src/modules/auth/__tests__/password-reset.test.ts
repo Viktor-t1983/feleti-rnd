@@ -15,17 +15,15 @@ vi.mock('../../../lib/prisma', () => ({
   },
 }));
 
-vi.mock('../../modules/email/email.service', () => ({
+vi.mock('../../email/email.service', () => ({
   emailService: {
     sendPasswordResetEmail: vi.fn().mockResolvedValue(true),
   },
 }));
 
 vi.mock('bcryptjs', () => ({
-  default: {
-    hash: vi.fn().mockResolvedValue('hashed_password'),
-    compare: vi.fn().mockResolvedValue(true),
-  },
+  hash: vi.fn().mockResolvedValue('hashed_password'),
+  compare: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('crypto', () => ({
@@ -167,7 +165,7 @@ describe('PasswordResetService', () => {
       expect(mockPrisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-1' },
         data: {
-          password: 'hashed_password',
+          passwordHash: 'hashed_password',
           resetToken: null,
           resetTokenExpiresAt: null,
         },
