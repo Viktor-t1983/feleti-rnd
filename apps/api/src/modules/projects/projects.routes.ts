@@ -31,23 +31,35 @@ export function projectsRoutes(fastify: FastifyInstance): void {
   const projectsService = getProjectsService();
 
   // Get all projects with filters
-  fastify.get('/projects', async (request, reply) => {
-    const filters = projectFiltersSchema.parse(request.query);
-    const result = await projectsService.getProjects(filters);
-    return reply.send(result);
-  });
+  fastify.get(
+    '/projects',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request: AuthenticatedRequest, reply) => {
+      const filters = projectFiltersSchema.parse(request.query);
+      const result = await projectsService.getProjects(filters);
+      return reply.send(result);
+    }
+  );
 
   // Get project by ID
-  fastify.get('/projects/:id', async (request, reply) => {
-    const { id } = projectIdParamSchema.parse(request.params);
-    const project = await projectsService.getProjectById(id);
+  fastify.get(
+    '/projects/:id',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request: AuthenticatedRequest, reply) => {
+      const { id } = projectIdParamSchema.parse(request.params);
+      const project = await projectsService.getProjectById(id);
 
-    if (!project) {
-      return reply.status(404).send({ error: 'Project not found' });
+      if (!project) {
+        return reply.status(404).send({ error: 'Project not found' });
+      }
+
+      return reply.send(project);
     }
-
-    return reply.send(project);
-  });
+  );
 
   // Create new project
   fastify.post(
@@ -98,11 +110,17 @@ export function projectsRoutes(fastify: FastifyInstance): void {
   );
 
   // Get project members
-  fastify.get('/projects/:id/members', async (request, reply) => {
-    const { id } = projectIdParamSchema.parse(request.params);
-    const members = await projectsService.getProjectMembers(id);
-    return reply.send(members);
-  });
+  fastify.get(
+    '/projects/:id/members',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request: AuthenticatedRequest, reply) => {
+      const { id } = projectIdParamSchema.parse(request.params);
+      const members = await projectsService.getProjectMembers(id);
+      return reply.send(members);
+    }
+  );
 
   // Add project member
   fastify.post(
