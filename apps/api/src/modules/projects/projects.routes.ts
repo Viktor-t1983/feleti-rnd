@@ -5,7 +5,9 @@
 
 import { FastifyInstance } from 'fastify';
 
+import { prisma } from '../../lib/prisma';
 import { AuthenticatedRequest } from '../../middlewares/authenticate';
+import { ReportsService } from '../reports/reports.service';
 
 import {
   addProjectMemberSchema,
@@ -157,6 +159,65 @@ export function projectsRoutes(fastify: FastifyInstance): void {
 
       await projectsService.removeProjectMember(projectId, userId);
       return reply.status(204).send();
+    }
+  );
+
+  // Export project as PDF
+  fastify.get(
+    '/projects/:id/pdf',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request: AuthenticatedRequest, reply) => {
+      const { id } = projectIdParamSchema.parse(request.params);
+
+      const project = await prisma.project.findUnique({
+        where: { id },
+        include: {
+          owner: { select: { fullName: true } },
+          members: {
+            include: {
+              user: { select: { fullName: true } },
+            },
+          },
+        },
+      });
+
+      if (!project) {
+        return reply.code(404).send({
+          error: 'Project not found',
+        });
+      }
+
+      // Transform to match ReportsService interface
+      const projectData = {
+        id: project.id,
+        code: project.code,
+        name: project.name,
+        description: project.description || '',
+        stage: project.stage,
+        status: project.status,
+        budget: project.budget,
+        spent: project.spent,
+        startDate: project.startDate,
+        targetDate: project.targetDate,
+        creator: { fullName: project.owner.fullName },
+        members: project.members.map((m: { role: string; user?: { fullName: string } }) => ({
+          role: m.role,
+          user: m.user ? { fullName: m.user.fullName } : undefined,
+        })),
+      };
+
+      const reportsService = new ReportsService();
+      const buffer = await reportsService.generateProjectPDF(projectData);
+
+      const filename = `project-${project.code}-${Date.now()}.pdf`;
+
+      return reply
+        .header('Content-Type', 'application/pdf')
+        .header('Content-Disposition', `attachment; filename="${filename}"`)
+        .header('Content-Length', buffer.length)
+        .send(buffer);
     }
   );
 }
