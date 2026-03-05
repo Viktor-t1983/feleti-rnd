@@ -67,7 +67,17 @@ function errorHandlerPlugin(fastify: FastifyInstance): void {
       const includeStack = !isProduction;
 
       // Handle the response based on error type
-      if (error instanceof AppError) {
+      // Check for rate limit errors (statusCode 429)
+      const errWithStatus = error as { statusCode?: number };
+      if (errWithStatus.statusCode === 429) {
+        const errorResponse: ErrorResponse = {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: error.message || 'Too many requests, please try again later',
+        };
+        void reply.status(429).send({
+          error: errorResponse,
+        });
+      } else if (error instanceof AppError) {
         const errorResponse: ErrorResponse = {
           code: error.code,
           message: error.message,
