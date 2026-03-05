@@ -1,0 +1,14 @@
+{
+  "user": {
+    "id": "f289d8ec-4521-4ff4-984d-d00f104bf49a",
+    "email": "admin@feleti.com",
+    "username": "admin",
+    "fullName": "Администратор Системы",
+    "roleId": "e2f97997-3de8-4065-8d33-93cb069e962a",
+    "role": { "id": "e2f97997-3de8-4065-8d33-93cb069e962a", "name": "Admin" },
+    "createdAt": "2026-03-04T18:18:33.941Z",
+    "updatedAt": "2026-03-04T18:18:33.941Z"
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmMjg5ZDhlYy00NTIxLTRmZjQtOTg0ZC1kMDBmMTA0YmY0OWEiLCJlbWFpbCI6ImFkbWluQGZlbGV0aS5jb20iLCJyb2xlIjoiQWRtaW4iLCJpYXQiOjE3NzI2NTYyMDgsImV4cCI6MTc3MjY1NzEwOH0.hKu59wb5WCj3pBdwuiS2SqsyO-5Ar0J8tELhfM9oyAE",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmMjg5ZDhlYy00NTIxLTRmZjQtOTg0ZC1kMDBmMTA0YmY0OWEiLCJlbWFpbCI6ImFkbWluQGZlbGV0aS5jb20iLCJyb2xlIjoiQWRtaW4iLCJpYXQiOjE3NzI2NTYyMDgsImV4cCI6MTc3MzI2MTAwOH0.rKNgeV9x46MFmnuuZDNLDrKmChM6ZUM-DvANbDFVhRM"
+}
