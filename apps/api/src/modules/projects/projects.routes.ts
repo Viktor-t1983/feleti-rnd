@@ -68,7 +68,12 @@ export function projectsRoutes(fastify: FastifyInstance): void {
       preHandler: [fastify.authenticate],
     },
     async (request: AuthenticatedRequest, reply) => {
-      const input = createProjectSchema.parse(request.body);
+      const parsedBody = createProjectSchema.parse(request.body);
+      // If ownerId not provided, use current user from auth token
+      const input = {
+        ...parsedBody,
+        ownerId: parsedBody.ownerId ?? request.user.userId,
+      };
       const project = await projectsService.createProject(input);
       return reply.status(201).send(project);
     }
