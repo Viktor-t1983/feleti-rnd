@@ -14,6 +14,7 @@ export async function productClassesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/product-classes',
     {
+      preHandler: [fastify.authenticate],
       schema: {
         tags: ['Engineering'],
         description: 'Получить все Product Classes',
@@ -27,14 +28,13 @@ export async function productClassesRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (
-      request: FastifyRequest<{
-        Querystring: { category?: string; active?: boolean; parentId?: string };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { category, active, parentId } = request.query;
+        const { category, active, parentId } = request.query as {
+          category?: string;
+          active?: boolean;
+          parentId?: string;
+        };
         const classes = await productClassesService.getAll({
           category,
           active,
@@ -57,14 +57,15 @@ export async function productClassesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/product-classes/:id',
     {
+      preHandler: [fastify.authenticate],
       schema: {
         tags: ['Engineering'],
         description: 'Получить Product Class по ID',
       },
     },
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { id } = request.params;
+        const { id } = request.params as { id: string };
         const productClass = await productClassesService.getById(id);
         return reply.send(productClass);
       } catch (error) {
@@ -85,6 +86,7 @@ export async function productClassesRoutes(fastify: FastifyInstance) {
   fastify.post(
     '/product-classes',
     {
+      preHandler: [fastify.authenticate],
       schema: {
         tags: ['Engineering'],
         description: 'Создать Product Class',
@@ -106,25 +108,22 @@ export async function productClassesRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (
-      request: FastifyRequest<{
-        Body: {
-          code: string;
-          name: string;
-          description?: string;
-          icon?: string;
-          category: string;
-          parentId?: string;
-          typicalRequirements?: RequirementTemplate[];
-          calculationBlockRefs?: CalculationBlockReference[];
-          validationCriteria?: ValidationCriterion[];
-          kpiMetrics?: KPIMetric[];
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const productClass = await productClassesService.create(request.body);
+        const productClass = await productClassesService.create(
+          request.body as {
+            code: string;
+            name: string;
+            description?: string;
+            icon?: string;
+            category: string;
+            parentId?: string;
+            typicalRequirements?: RequirementTemplate[];
+            calculationBlockRefs?: CalculationBlockReference[];
+            validationCriteria?: ValidationCriterion[];
+            kpiMetrics?: KPIMetric[];
+          }
+        );
         return reply.status(201).send(productClass);
       } catch (error) {
         request.log.error(error);
@@ -144,32 +143,30 @@ export async function productClassesRoutes(fastify: FastifyInstance) {
   fastify.put(
     '/product-classes/:id',
     {
+      preHandler: [fastify.authenticate],
       schema: {
         tags: ['Engineering'],
         description: 'Обновить Product Class',
       },
     },
-    async (
-      request: FastifyRequest<{
-        Params: { id: string };
-        Body: {
-          name?: string;
-          description?: string;
-          icon?: string;
-          category?: string;
-          typicalRequirements?: RequirementTemplate[];
-          calculationBlockRefs?: CalculationBlockReference[];
-          validationCriteria?: ValidationCriterion[];
-          kpiMetrics?: KPIMetric[];
-          metadata?: Record<string, unknown>;
-          active?: boolean;
-        };
-      }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { id } = request.params;
-        const productClass = await productClassesService.update(id, request.body);
+        const { id } = request.params as { id: string };
+        const productClass = await productClassesService.update(
+          id,
+          request.body as {
+            name?: string;
+            description?: string;
+            icon?: string;
+            category?: string;
+            typicalRequirements?: RequirementTemplate[];
+            calculationBlockRefs?: CalculationBlockReference[];
+            validationCriteria?: ValidationCriterion[];
+            kpiMetrics?: KPIMetric[];
+            metadata?: Record<string, unknown>;
+            active?: boolean;
+          }
+        );
         return reply.send(productClass);
       } catch (error) {
         request.log.error(error);
@@ -187,14 +184,15 @@ export async function productClassesRoutes(fastify: FastifyInstance) {
   fastify.delete(
     '/product-classes/:id',
     {
+      preHandler: [fastify.authenticate],
       schema: {
         tags: ['Engineering'],
         description: 'Удалить Product Class',
       },
     },
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { id } = request.params;
+        const { id } = request.params as { id: string };
         await productClassesService.update(id, { active: false });
         return reply.status(204).send();
       } catch (error) {
@@ -213,6 +211,7 @@ export async function productClassesRoutes(fastify: FastifyInstance) {
   fastify.get(
     '/product-classes/hierarchy',
     {
+      preHandler: [fastify.authenticate],
       schema: {
         tags: ['Engineering'],
         description: 'Получить иерархию Product Classes',
