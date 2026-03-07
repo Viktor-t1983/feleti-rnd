@@ -1,5 +1,5 @@
 # FELETI R&D Assistant 2.0 - AI Development Rules
-# Версия: 3.2 | Дата: 2026-02-11
+# Версия: 3.3 | Дата: 2026-03-07
 # Для: Roo Cood, Cursor AI, Cline, GitHub Copilot
 
 ## 🎯 MISSION CRITICAL
@@ -318,6 +318,18 @@ console.log('Debug:', data);
 
 // ❌ Commit without tests
 git commit -m "add feature" # NO TESTS!
+
+// ❌ Коммитить .env файлы
+git add .env.production  // НИКОГДА — секреты утекут публично!
+
+// ❌ Один огромный коммит на всё
+git commit -m "added everything"  // Только атомарные коммиты!
+
+// ❌ Пропускать тесты через skipIf без реальной причины
+describe.skipIf(!condition)  // Это маскирует проблему, не решает!
+
+// ❌ Маршруты без authenticate middleware
+fastify.get('/api/projects', handler)  // Данные утекут без авторизации!
 ```
 
 ---
@@ -423,6 +435,22 @@ docs(readme): update setup
 feature/auth-refresh-tokens
 bugfix/project-duplication
 hotfix/security-vulnerability
+
+# Текущие ветки проекта:
+# main          — продакшн, всегда стабильная
+# development   — основная разработка
+# feature/*     — новые фичи
+# bugfix/*      — исправления багов
+# hotfix/*      — критические исправления
+
+# Атомарный коммит после КАЖДОЙ задачи:
+git commit -m "fix(security): add authenticate middleware to GET /api/projects"
+git commit -m "fix(nginx): correct proxy_pass path"
+git commit -m "feat(calc): add shaft strength calculator"
+
+# Перед каждым push проверь:
+git ls-files | grep "\.env$"
+# Результат должен быть ПУСТЫМ — никаких .env в git!
 
 # Before commit
 ✅ npm run test
@@ -537,4 +565,34 @@ npx prisma db seed
 
 ---
 
-END OF .cursorrules - Version 3.2
+## ⚠️ ИЗВЕСТНЫЕ ОГРАНИЧЕНИЯ ПРОЕКТА
+
+### calc-engine (Python)
+Реализованы ТОЛЬКО финансовые расчёты:
+- ✅ NPV (npv_calculator.py)
+- ✅ IRR (irr_calculator.py)
+- ✅ ROI (roi_calculator.py)
+- ✅ Payback (payback_calculator.py)
+
+НЕ реализованы инженерные расчёты:
+- ❌ Прочность валов (strength)
+- ❌ Тепловой баланс (thermal)
+- ❌ Вентиляция (ventilation)
+
+При задачах на calc-engine — уточнять какой калькулятор нужен!
+
+### Тесты
+17 интеграционных тестов используют skipIf — это НЕ норма.
+Нужно настроить тестовую БД чтобы они запускались всегда.
+
+### API безопасность (исправлено 2026-03-04)
+GET /api/projects не имел authenticate middleware — исправлено.
+Перед добавлением нового endpoint ВСЕГДА проверяй наличие preHandler: [authenticate]
+
+### Масштаб
+Текущая цель: 150 пользователей (не 500+).
+500+ — цель после масштабирования в будущем.
+
+---
+
+END OF .cursorrules - Version 3.3
