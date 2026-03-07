@@ -27,7 +27,11 @@ export function LoginForm(): JSX.Element {
   return (
     <>
       {error && (
-        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-md">
+        <div
+          data-testid="login-error"
+          role="alert"
+          className="mb-4 p-3 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-md"
+        >
           {error}
         </div>
       )}
