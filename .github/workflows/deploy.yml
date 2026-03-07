@@ -1,7 +1,7 @@
 name: Production Deploy
 
 on:
-  # Ручной запуск деплоя
+  # Только ручной запуск деплоя
   workflow_dispatch:
     inputs:
       environment:
@@ -21,15 +21,6 @@ on:
         required: false
         type: boolean
         default: false
-  
-  # Автоматический деплой при push в main (только после успешного CI)
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - '.github/**'
-      - 'docs/**'
 
 # Требуем успешного выполнения CI pipeline перед деплоем
 concurrency:
@@ -77,19 +68,9 @@ jobs:
       - name: Check if deployment should proceed
         id: check
         run: |
-          # Проверяем, есть ли изменения в критичных директориях
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            CHANGES=$(git diff --name-only HEAD~1 HEAD | grep -E '(apps/|packages/)' || true)
-            if [ -z "$CHANGES" ]; then
-              echo "should_deploy=false" >> $GITHUB_OUTPUT
-              echo "Нет изменений в приложениях, пропускаем деплой"
-            else
-              echo "should_deploy=true" >> $GITHUB_OUTPUT
-              echo "Обнаружены изменения: $CHANGES"
-            fi
-          else
-            echo "should_deploy=true" >> $GITHUB_OUTPUT
-          fi
+          # Всегда разрешаем деплой при ручном запуске
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "🚀 Деплой разрешен"
 
       - name: Log deployment info
         run: |
@@ -156,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare, build]
     if: needs.prepare.outputs.should_deploy == 'true'
-    environment: 
+    environment:
       name: ${{ needs.prepare.outputs.environment }}
       url: ${{ steps.deploy.outputs.url }}
     steps:
@@ -175,7 +156,7 @@ jobs:
           # Настройка доступа к кластеру Kubernetes
           echo "${{ secrets.KUBECONFIG_PROD }}" > kubeconfig.yaml
           export KUBECONFIG=kubeconfig.yaml
-          
+
           # Проверка подключения
           kubectl cluster-info
           kubectl get nodes
@@ -186,16 +167,16 @@ jobs:
         id: deploy
         run: |
           export KUBECONFIG=kubeconfig.yaml
-          
+
           # Обновление образов в манифестах
           sed -i "s|image:.*|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${{ needs.prepare.outputs.version }}|" k8s/api-deployment.yaml
-          
+
           # Применение манифестов
           kubectl apply -f k8s/ -n ${{ needs.prepare.outputs.environment }}
-          
+
           # Ожидание rollout
           kubectl rollout status deployment/api -n ${{ needs.prepare.outputs.environment }} --timeout=300s
-          
+
           # Получение URL сервиса
           SERVICE_URL=$(kubectl get svc api -n ${{ needs.prepare.outputs.environment }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
           echo "url=http://$SERVICE_URL" >> $GITHUB_OUTPUT
@@ -203,14 +184,14 @@ jobs:
       - name: Run smoke tests
         run: |
           export KUBECONFIG=kubeconfig.yaml
-          
+
           # Получение endpoint'а
           ENDPOINT=$(kubectl get svc api -n ${{ needs.prepare.outputs.environment }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          
+
           # Простые smoke тесты
           curl -f http://$ENDPOINT/health || exit 1
           curl -f http://$ENDPOINT/api/v1/status || exit 1
-          
+
           echo "✅ Smoke tests passed"
 
       - name: Notify deployment success
@@ -264,7 +245,7 @@ jobs:
           # Проверка здоровья всех сервисов
           echo "Проверка здоровья развернутых сервисов..."
           # Здесь можно добавить проверки через curl или специализированные инструменты
-          
+
           echo "✅ Все сервисы здоровы"
 
       - name: Send deployment notification
