@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
@@ -8,8 +8,10 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost',
     trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
   projects: [
     {
@@ -22,4 +24,4 @@ export default defineConfig({
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
   },
-})
+});
