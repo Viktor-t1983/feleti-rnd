@@ -77,6 +77,15 @@ function errorHandlerPlugin(fastify: FastifyInstance): void {
         void reply.status(429).send({
           error: errorResponse,
         });
+      } else if (errWithStatus.statusCode === 400 && error.message.includes('must match format')) {
+        // Handle Fastify validation errors (format validation)
+        const errorResponse: ErrorResponse = {
+          code: 'VALIDATION_ERROR',
+          message: error.message || 'Invalid request data',
+        };
+        void reply.status(400).send({
+          error: errorResponse,
+        });
       } else if (error instanceof AppError) {
         const errorResponse: ErrorResponse = {
           code: error.code,
