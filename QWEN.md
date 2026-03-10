@@ -442,18 +442,24 @@ docker-compose exec api npx prisma studio
 
 ### Calc Engine (Python)
 
-Реализованы **только** финансовые расчёты:
+Реализованы финансовые расчёты:
 
 - ✅ NPV (Net Present Value)
 - ✅ IRR (Internal Rate of Return)
 - ✅ ROI (Return on Investment)
 - ✅ Payback Period
 
-**НЕ реализованы** инженерные расчёты:
+Реализованы инженерные расчёты (v1.1.1):
 
-- ❌ Прочность валов (strength)
-- ❌ Тепловой баланс (thermal)
-- ❌ Вентиляция (ventilation)
+- ✅ Прочность валов (strength) — ГОСТ 21354-87
+- ✅ Тепловой баланс (thermal) — расчёт КПД и потерь
+- ✅ Вентиляция (ventilation) — СП 60.13330.2020
+
+### Endpoints
+
+- `POST /engineering/shaft-strength` — расчёт прочности вала
+- `POST /engineering/thermal-balance` — тепловой баланс оборудования
+- `POST /engineering/ventilation` — расчёт вентиляции помещений
 
 ### Тесты
 

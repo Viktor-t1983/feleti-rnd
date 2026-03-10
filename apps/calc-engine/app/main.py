@@ -1,6 +1,6 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import financial
+from app.routers import financial, engineering
 
 app = FastAPI(
     title="FELETI R&D Financial Calculator",
@@ -23,8 +23,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Регистрируем роутер
+# Регистрируем роутеры
 app.include_router(financial.router)
+app.include_router(engineering.router)
 
 @app.get("/health")
 async def health():
@@ -43,9 +44,16 @@ async def root():
         "docs": "/docs",
         "health": "/health",
         "endpoints": {
-            "npv": "POST /api/financial/npv",
-            "irr": "POST /api/financial/irr",
-            "roi": "POST /api/financial/roi",
-            "payback": "POST /api/financial/payback"
+            "financial": {
+                "npv": "POST /api/financial/npv",
+                "irr": "POST /api/financial/irr",
+                "roi": "POST /api/financial/roi",
+                "payback": "POST /api/financial/payback"
+            },
+            "engineering": {
+                "shaft-strength": "POST /engineering/shaft-strength",
+                "thermal-balance": "POST /engineering/thermal-balance",
+                "ventilation": "POST /engineering/ventilation"
+            }
         }
     }
