@@ -1,10 +1,12 @@
 import { expect, Page, test } from '@playwright/test';
 
-const BASE_URL = 'http://localhost';
+const BASE_URL =
+  process.env.CI || process.env.DOCKER ? 'http://localhost' : 'http://localhost:5173';
 const ADMIN_EMAIL = 'admin@feleti.com';
 const ADMIN_PASSWORD = 'admin123';
 
-// Хелпер для логина — используем во всех тестах
+// Хелпер для логина — используется только в тесте 3 для проверки логина
+// Остальные тесты используют storageState из global-setup
 async function login(page: Page) {
   await page.goto(`${BASE_URL}/login`);
   await page.waitForLoadState('networkidle');
@@ -53,11 +55,8 @@ test.describe('FELETI R&D — Полная проверка системы', () 
   });
 
   test('4. Список проектов отображается', async ({ page }) => {
-    // Сначала логин
-    await login(page);
-
-    // Переходим на страницу проектов через клик по навигации
-    await page.locator('a[href="/projects"]').click();
+    // Используем сохранённую сессию из storageState
+    await page.goto(`${BASE_URL}/projects`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(5000); // Даем время на загрузку данных
 
@@ -68,12 +67,8 @@ test.describe('FELETI R&D — Полная проверка системы', () 
   });
 
   test('5. Создание нового проекта', async ({ page }) => {
-    // Сначала логин
-    await login(page);
-    await page.waitForTimeout(1000);
-
-    // Переходим на страницу проектов через навигацию
-    await page.locator('a[href="/projects"]').click();
+    // Используем сохранённую сессию из storageState
+    await page.goto(`${BASE_URL}/projects`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000);
 
@@ -109,12 +104,8 @@ test.describe('FELETI R&D — Полная проверка системы', () 
   });
 
   test('6. Финансовые расчёты работают', async ({ page }) => {
-    // Сначала логин
-    await login(page);
-    await page.waitForTimeout(1000);
-
-    // Переходим на страницу калькуляторов через навигацию
-    await page.locator('a[href="/financial-calculators"]').click();
+    // Используем сохранённую сессию из storageState
+    await page.goto(`${BASE_URL}/financial-calculators`);
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(5000);
 

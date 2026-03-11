@@ -14,9 +14,18 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   projects: [
+    // Setup project to authenticate before running tests
+    {
+      name: 'setup',
+      testMatch: /global-setup\.ts/,
+    },
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './e2e/.auth.json',
+      },
+      dependencies: ['setup'],
     },
   ],
   webServer:
