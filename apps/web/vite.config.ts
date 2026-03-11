@@ -80,13 +80,16 @@ export default defineConfig({
             url: '/financial-calculators',
             description: 'Финансовые калькуляторы',
           },
+          {
+            name: 'Инж. расчёты',
+            url: '/engineering/calculators',
+            description: 'Инженерные расчёты',
+          },
         ],
       },
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
-        // Кэшируем статику
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Стратегия для API - network first
         runtimeCaching: [
           {
             urlPattern: /^https?:\/\/.*\/api\/.*/i,
@@ -95,7 +98,7 @@ export default defineConfig({
               cacheName: 'api-cache',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 300, // 5 минут
+                maxAgeSeconds: 300,
               },
               networkTimeoutSeconds: 10,
             },
@@ -107,12 +110,11 @@ export default defineConfig({
               cacheName: 'images-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 86400, // 1 день
+                maxAgeSeconds: 86400,
               },
             },
           },
         ],
-        // Офлайн страница
         navigateFallback: '/offline.html',
         navigateFallbackDenylist: [/^\/api/],
       },

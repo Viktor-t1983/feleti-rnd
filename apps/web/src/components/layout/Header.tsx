@@ -92,6 +92,12 @@ export function Header() {
             >
               ⚙️ Engineering
             </Link>
+            <Link
+              to="/engineering/calculators"
+              className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+            >
+              🧮 Инж. расчёты
+            </Link>
             {user?.role === 'Admin' && (
               <Link
                 to="/admin"

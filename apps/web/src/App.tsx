@@ -13,6 +13,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EngineeringConsolePage } from './pages/EngineeringConsolePage';
+import { EngineeringCalculatorsPage } from './pages/EngineeringCalculatorsPage';
 import { FinancialCalculatorsPage } from './pages/FinancialCalculatorsPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
@@ -135,6 +136,14 @@ function AppContent(): JSX.Element {
               element={
                 <ProtectedRoute>
                   <EngineeringConsolePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/engineering/calculators"
+              element={
+                <ProtectedRoute>
+                  <EngineeringCalculatorsPage />
                 </ProtectedRoute>
               }
             />
