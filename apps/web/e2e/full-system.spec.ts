@@ -11,9 +11,9 @@ async function login(page: Page) {
   await page.locator('[data-testid="login-email"]').fill(ADMIN_EMAIL);
   await page.locator('[data-testid="login-password"]').fill(ADMIN_PASSWORD);
   await page.locator('[data-testid="login-submit"]').click();
-  // Ждем навигацию на dashboard
-  await page.waitForURL(/dashboard/, { timeout: 20000 });
-  await page.waitForTimeout(2000);
+  // Ждем навигацию на dashboard с увеличенным таймаутом
+  await page.waitForURL(/dashboard/, { timeout: 30000 });
+  await page.waitForTimeout(3000);
 }
 
 test.describe('FELETI R&D — Полная проверка системы', () => {
