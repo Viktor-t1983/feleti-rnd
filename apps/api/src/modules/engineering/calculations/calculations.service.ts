@@ -532,6 +532,121 @@ export class CalculationsService {
       avgExecutionTime: avgExecutionTime._avg.executionTime || 0,
     };
   }
+
+  /**
+   * Save calculation result with type/category (simplified API)
+   */
+  async saveCalculation(
+    data: {
+      projectId: string;
+      type: string;
+      category: 'FINANCIAL' | 'ENGINEERING';
+      inputData: Record<string, unknown>;
+      resultData: Record<string, unknown>;
+      notes?: string;
+    },
+    userId: string
+  ) {
+    // Map type to CalculationType enum
+    const typeMap: Record<string, string> = {
+      npv: 'NPV',
+      irr: 'IRR',
+      roi: 'ROI',
+      payback: 'PAYBACK',
+      shaft_strength: 'SHAFT_STRENGTH',
+      thermal: 'THERMAL',
+      ventilation: 'VENTILATION',
+    };
+    const calculationType = typeMap[data.type.toLowerCase()] || 'CUSTOM';
+
+    // Map type to block if exists
+    const block = await prisma.calculationBlock.findFirst({
+      where: { code: `GENERIC_${calculationType}` },
+    });
+
+    // Create block if not exists (with proper CalculationCategory)
+    let blockId: string | null = block?.id ?? null;
+    if (!block) {
+      // Map FINANCIAL/ENGINEERING to CalculationCategory enum
+      const blockCategory = data.category === 'FINANCIAL' ? 'ECONOMIC' : 'THERMAL';
+      const newBlock = await prisma.calculationBlock.create({
+        data: {
+          code: `GENERIC_${calculationType}`,
+          category: blockCategory,
+          name: `${calculationType} Calculation`,
+          description: `Generic ${calculationType} calculation`,
+          inputSchema: {} as any,
+          outputSchema: {} as any,
+          formulae: {} as any,
+          active: true,
+          version: '1.0',
+        },
+      });
+      blockId = newBlock.id;
+    }
+
+    return prisma.calculation.create({
+      data: {
+        blockId,
+        projectId: data.projectId,
+        type: calculationType as any,
+        category: data.category as any,
+        inputs: data.inputData as any,
+        inputData: data.inputData as any,
+        outputs: data.resultData as any,
+        resultData: data.resultData as any,
+        status: 'SUCCESS',
+        isSuccessful: true,
+        notes: data.notes,
+        executedById: userId,
+        completedAt: new Date(),
+      },
+      include: {
+        project: { select: { code: true, name: true } },
+        executedBy: { select: { fullName: true, email: true } },
+      },
+    });
+  }
+
+  /**
+   * Get calculation summary by project
+   */
+  async getCalculationSummary(projectId: string) {
+    const calculations = await prisma.calculation.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        block: { select: { code: true, category: true } },
+      },
+    });
+
+    const financial = calculations.filter(
+      (c) =>
+        c.category === 'FINANCIAL' ||
+        (c.block && ['ECONOMIC'].includes(c.block.category)) ||
+        ['NPV', 'IRR', 'ROI', 'PAYBACK'].includes(c.type || '')
+    );
+    const engineering = calculations.filter(
+      (c) =>
+        c.category === 'ENGINEERING' ||
+        (c.block && ['THERMAL', 'AERODYNAMIC', 'MECHANICAL'].includes(c.block.category)) ||
+        ['SHAFT_STRENGTH', 'THERMAL', 'VENTILATION'].includes(c.type || '')
+    );
+
+    const byType: Record<string, number> = {};
+    for (const calc of calculations) {
+      const type = calc.type || calc.block?.code || 'UNKNOWN';
+      byType[type] = (byType[type] ?? 0) + 1;
+    }
+
+    return {
+      total: calculations.length,
+      financial: financial.length,
+      engineering: engineering.length,
+      lastCalculation: calculations[0]?.createdAt ?? null,
+      byType,
+    };
+  }
 }
 
 export const calculationsService = new CalculationsService();

@@ -76,6 +76,9 @@ void fastify.register(swaggerPlugin);
 // Register auth routes
 void fastify.register(authRoutes, { prefix: '/api' });
 
+// Register calculations routes (BEFORE projects routes to avoid route conflicts)
+void fastify.register(calculationsRoutes, { prefix: '/api' });
+
 // Register projects routes
 void fastify.register(projectsRoutes, { prefix: '/api' });
 
@@ -93,9 +96,6 @@ void fastify.register(rulesRoutes, { prefix: '/api' });
 
 // Register validation routes
 void fastify.register(validationRoutes, { prefix: '/api' });
-
-// Register calculations routes
-void fastify.register(calculationsRoutes, { prefix: '/api' });
 
 // Register AI Agents routes
 void fastify.register(aiAgentsRoutes, { prefix: '/api' });

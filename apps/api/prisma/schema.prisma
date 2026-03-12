@@ -811,46 +811,76 @@ enum CalculationStatus {
   WARNING
 }
 
+/// Тип расчёта (для простых расчётов без блока)
+enum CalculationType {
+  NPV
+  IRR
+  ROI
+  PAYBACK
+  SHAFT_STRENGTH
+  THERMAL
+  VENTILATION
+  CUSTOM
+}
+
+/// Категория расчёта (FINANCIAL или ENGINEERING)
+enum CalculationResultCategory {
+  FINANCIAL
+  ENGINEERING
+}
+
 /// Результат выполнения расчёта
 model Calculation {
   id                String             @id @default(uuid())
-  
-  blockId           String
-  block             CalculationBlock   @relation(fields: [blockId], references: [id])
-  
+
+  // Связь с блоком (опционально - для сложных расчётов)
+  blockId           String?
+  block             CalculationBlock?  @relation(fields: [blockId], references: [id])
+
+  // Тип расчёта (для простых расчётов без блока)
+  type              CalculationType?
+  category          CalculationResultCategory?
+
   projectId         String
   project           Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+
   // Входные данные
   inputs            Json
-  
+  inputData         Json?              // Алиас для совместимости
+
   // Результаты
   outputs           Json?
-  
+  resultData        Json?              // Алиас для совместимости
+
   // Статус
-  status            CalculationStatus
+  status            CalculationStatus  @default(SUCCESS)
+  isSuccessful      Boolean            @default(true)
   progress          Float              @default(0) // 0-100%
-  
+
   // Ошибки и предупреждения
   errors            Json?
   warnings          Json?
-  
+
   // Валидация результатов
   validated         Boolean            @default(false)
   validationResults Json?
-  
+
+  // Заметки инженера
+  notes             String?            @db.Text
+
   // Метаданные выполнения
   executionTime     Int?               // мс
   metadata          Json?
-  
+
   // Исполнитель
   executedById      String
   executedBy        User               @relation(fields: [executedById], references: [id])
-  
+
   createdAt         DateTime           @default(now())
   completedAt       DateTime?
-  
+
   @@index([projectId])
+  @@index([type])
   @@index([status])
   @@index([createdAt])
 }

@@ -11,7 +11,12 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
     ban: 10, // Ban after 10 consecutive rate limit violations
     skip: (req: FastifyRequest) => {
       // Skip rate limiting for health check endpoint
-      return req.url?.startsWith('/health') ?? false;
+      if (req.url?.startsWith('/health')) return true;
+      // Skip rate limiting for localhost (development)
+      const ip = req.ip || req.headers['x-forwarded-for'];
+      if (typeof ip === 'string' && (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('172.')))
+        return true;
+      return false;
     },
   } as RateLimitPluginOptions); // Use type assertion because skip may not be in RateLimitPluginOptions
 };
