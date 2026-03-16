@@ -104,6 +104,7 @@ void fastify.register(aiAgentsRoutes, { prefix: '/api' });
 void fastify.register(productClassesRoutes, { prefix: '/api' });
 
 import { activityLogRoutes } from './modules/activity-log/activity-log.routes';
+import { knowledgeBaseRoutes } from './modules/knowledge-base';
 import { adminRoutes } from './modules/admin/admin.routes';
 import { analyticsRoutes } from './modules/analytics';
 import { attachmentsRoutes } from './modules/attachments/attachments.routes';
@@ -121,6 +122,7 @@ void fastify.register(notificationsRoutes, { prefix: '/api' });
 void fastify.register(adminRoutes, { prefix: '/api' });
 void fastify.register(activityLogRoutes, { prefix: '/api' });
 void fastify.register(templatesRoutes, { prefix: '/api' });
+void fastify.register(knowledgeBaseRoutes, { prefix: '/api' });
 
 // Health check endpoint
 fastify.get('/health', () => {
@@ -130,6 +132,17 @@ fastify.get('/health', () => {
 // Redirect root to docs
 fastify.get('/', (_request, reply) => {
   return reply.redirect('/docs');
+});
+
+// Stub routes for missing endpoints
+// GET /api/users - заглушка для получения списка пользователей
+fastify.get('/api/users', async () => {
+  return { message: 'not implemented' };
+});
+
+// GET /api/validation-gates - заглушка (алиас для /api/validation/gates)
+fastify.get('/api/validation-gates', async () => {
+  return { message: 'not implemented' };
 });
 
 const start = (): void => {

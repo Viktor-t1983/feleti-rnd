@@ -13,7 +13,8 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EngineeringConsolePage } from './pages/EngineeringConsolePage';
-import { EngineeringCalculatorsPage } from './pages/EngineeringCalculatorsPage';
+import EngineeringCalculatorsPage from './pages/EngineeringCalculatorsPage';
+import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
 import { FinancialCalculatorsPage } from './pages/FinancialCalculatorsPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
@@ -160,6 +161,14 @@ function AppContent(): JSX.Element {
               element={
                 <ProtectedRoute>
                   <RulesDashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/knowledge-base"
+              element={
+                <ProtectedRoute>
+                  <KnowledgeBasePage />
                 </ProtectedRoute>
               }
             />

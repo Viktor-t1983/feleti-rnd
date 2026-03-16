@@ -98,6 +98,12 @@ export function Header() {
             >
               🧮 Инж. расчёты
             </Link>
+            <Link
+              to="/knowledge-base"
+              className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
+            >
+              📚 База знаний
+            </Link>
             {user?.role === 'Admin' && (
               <Link
                 to="/admin"

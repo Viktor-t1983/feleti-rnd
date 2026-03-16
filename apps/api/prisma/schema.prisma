@@ -51,6 +51,9 @@ model User {
   notifications Notification[]
   activityLogs ActivityLog[]
   createdTemplates ProjectTemplate[]
+  
+  // Knowledge Base Relations
+  createdEquipmentTypes EquipmentType[]
 
   // Engineering Platform Relations
   knowledgeNodes         KnowledgeNode[]
@@ -128,6 +131,9 @@ model Project {
   gateValidations GateValidation[]
   calculations    Calculation[]
   agentMemories   AgentMemory[]
+  
+  // Knowledge Base Relations
+  equipmentTypes  EquipmentType[] @relation("ProjectEquipment")
 
   @@index([code])
   @@index([ownerId])
@@ -886,7 +892,253 @@ model Calculation {
 }
 
 // ==========================================
-// 6. AI AGENTS MEMORY & CONTEXT
+// 6. KNOWLEDGE BASE MODULE
+// Equipment Catalog, Markets, Competitors
+// ==========================================
+
+/// Категория оборудования
+enum EquipmentCategory {
+  THERMAL          // Термическое оборудование (дымогенераторы, термокамеры)
+  MECHANICAL       // Механическое (шпигорезки, фаршемешалки)
+  HYDRAULIC        // Гидравлическое
+  ELECTRICAL       // Электрическое
+  AUTOMATION       // Автоматизация
+  PACKAGING        // Упаковочное
+  TRANSPORT        // Транспортное
+  OTHER            // Прочее
+}
+
+/// Единицы измерения для параметров
+enum UnitOfMeasure {
+  KG
+  TON
+  LITER
+  CUBIC_METER
+  METER
+  MM
+  CELSIUS
+  BAR
+  KPA
+  KWH
+  KW
+  PERCENT
+  PIECES
+  HOURS
+  MINUTES
+}
+
+/// Каталог оборудования
+model EquipmentType {
+  id              String          @id @default(uuid())
+  code            String          @unique // FELETI-TK-100, FELETI-DG-200
+  name            String          // Полное название
+  shortName       String?         // Краткое название для отображения
+  
+  category        EquipmentCategory
+  description     String?         @db.Text
+  specifications  Json?           // Технические характеристики
+  
+  // Цены и стоимость
+  basePrice       Float?          // Базовая цена (EUR)
+  currency        String          @default("EUR")
+  
+  // Изображения и документы
+  images          String[]        // URLs изображений
+  documentationUrl String?
+  
+  // Производство
+  manufacturer    String          @default("FELETI")
+  countryOfOrigin String          @default("DE")
+  leadTimeDays    Int?            // Срок поставки в днях
+  
+  // Статус
+  isActive        Boolean         @default(true)
+  isCustom        Boolean         @default(false) // true = пользовательское оборудование
+  
+  // Связи
+  createdById     String
+  createdBy       User            @relation(fields: [createdById], references: [id])
+  
+  // Relations
+  projects        Project[]       @relation("ProjectEquipment")
+  competitorEquipment CompetitorEquipment[]
+  marketEquipment MarketEquipment[]
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([category])
+  @@index([isActive])
+  @@index([code])
+}
+
+/// Регион рынка
+enum MarketRegion {
+  EUROPE
+  NORTH_AMERICA
+  SOUTH_AMERICA
+  ASIA
+  AFRICA
+  AUSTRALIA
+  MIDDLE_EAST
+}
+
+/// Рынок сбыта
+model Market {
+  id              String          @id @default(uuid())
+  code            String          @unique // DE, US, CN, RU
+  name            String          // Germany, United States, China
+  
+  region          MarketRegion
+  description     String?         @db.Text
+  
+  // Демография и экономика
+  population      Int?            // Население
+  gdpPerCapita    Float?          // ВВП на душу населения
+  
+  // Особенности рынка
+  languages       String[]        // Языки
+  currencies      String[]        // Валюты
+  
+  // Мясная индустрия
+  meatConsumptionKgPerCapita Float? // Потребление мяса кг/чел/год
+  preferredMeatTypes String[]     // Предпочитаемые виды мяса
+  
+  // Требования
+  certificationsRequired String[]  // Требуемые сертификаты
+  standards         String[]      // Стандарты
+  importTaxes       Json?         // Пошлины на импорт
+  
+  // Конкуренты на рынке
+  competitors     CompetitorMarket[]
+  
+  // Оборудование на рынке
+  equipment       MarketEquipment[]
+  
+  // Статус
+  isActive        Boolean         @default(true)
+  priority        Int             @default(0) // Приоритет для компании
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([region])
+  @@index([isActive])
+  @@index([priority])
+}
+
+/// Конкурент (детальная модель для базы знаний)
+model CompetitorDetail {
+  id              String          @id @default(uuid())
+  name            String          @unique
+  legalName       String?         // Юридическое название
+  
+  // Контакты
+  website         String?
+  email           String?
+  phone           String?
+  address         String?         @db.Text
+  
+  // Информация о компании
+  foundedYear     Int?
+  employeesCount  Int?
+  annualRevenue   Float?          // Годовой оборот (млн EUR)
+  
+  // Рыночная позиция
+  marketShare     Float?          // Доля рынка (%)
+  strengths       String[]        // Сильные стороны
+  weaknesses      String[]        // Слабые стороны
+  
+  // Продукты
+  productRange    String[]        // Ассортимент продукции
+  priceSegment    String          @default("mid") // low, mid, premium
+  
+  // Страны присутствия
+  markets         CompetitorMarket[]
+  equipment       CompetitorEquipment[]
+  
+  // Статус
+  isActive        Boolean         @default(true)
+  threatLevel     String          @default("medium") // low, medium, high
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([isActive])
+  @@index([threatLevel])
+}
+
+/// Связь конкурент ↔ рынок
+model CompetitorMarket {
+  id              String          @id @default(uuid())
+  competitorId    String
+  competitor      CompetitorDetail @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  marketId        String
+  market          Market          @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  
+  marketShare     Float?          // Доля на конкретном рынке (%)
+  entryYear       Int?            // Год входа на рынок
+  notes           String?         @db.Text
+  
+  createdAt       DateTime        @default(now())
+  
+  @@unique([competitorId, marketId])
+  @@index([competitorId])
+  @@index([marketId])
+}
+
+/// Конкурентное оборудование
+model CompetitorEquipment {
+  id              String          @id @default(uuid())
+  competitorId    String
+  competitor      CompetitorDetail @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  
+  // Ссылка на наше оборудование (если есть аналог)
+  equipmentTypeId String?
+  equipmentType   EquipmentType?  @relation(fields: [equipmentTypeId], references: [id])
+  
+  name            String          // Название у конкурента
+  modelNumber     String?         // Модель/артикул
+  
+  // Характеристики
+  specifications  Json?           // Технические характеристики
+  advantages      String[]        // Преимущества
+  disadvantages   String[]        // Недостатки
+  
+  // Цена
+  priceRangeMin   Float?
+  priceRangeMax   Float?
+  currency        String          @default("EUR")
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  @@index([competitorId])
+  @@index([equipmentTypeId])
+}
+
+/// Связь оборудование ↔ рынок
+model MarketEquipment {
+  id              String          @id @default(uuid())
+  marketId        String
+  market          Market          @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  equipmentTypeId String
+  equipmentType   EquipmentType   @relation(fields: [equipmentTypeId], references: [id], onDelete: Cascade)
+  
+  localPrice      Float?          // Локальная цена
+  localCurrency   String?
+  demandLevel     String          @default("medium") // low, medium, high
+  popularity      Int             @default(0) // Популярность 0-100
+  
+  createdAt       DateTime        @default(now())
+  
+  @@unique([marketId, equipmentTypeId])
+  @@index([marketId])
+  @@index([equipmentTypeId])
+}
+
+// ==========================================
+// 7. AI AGENTS MEMORY & CONTEXT
 // ==========================================
 
 /// Типы AI агентов
