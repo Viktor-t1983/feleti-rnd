@@ -105,12 +105,20 @@ export function Header() {
               📚 База знаний
             </Link>
             {user?.role === 'Admin' && (
-              <Link
-                to="/admin"
-                className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
-              >
-                🛡️ Админ
-              </Link>
+              <>
+                <Link
+                  to="/admin/templates"
+                  className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                >
+                  📝 Шаблоны
+                </Link>
+                <Link
+                  to="/admin"
+                  className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                >
+                  🛡️ Админ
+                </Link>
+              </>
             )}
           </nav>
 

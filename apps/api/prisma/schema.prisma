@@ -134,6 +134,9 @@ model Project {
   
   // Knowledge Base Relations
   equipmentTypes  EquipmentType[] @relation("ProjectEquipment")
+  
+  // Charter Relations
+  blocks          ProjectBlock[]
 
   @@index([code])
   @@index([ownerId])
@@ -963,6 +966,7 @@ model EquipmentType {
   projects        Project[]       @relation("ProjectEquipment")
   competitorEquipment CompetitorEquipment[]
   marketEquipment MarketEquipment[]
+  templateBlocks  TemplateBlock[] // Charter template blocks
   
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -1138,7 +1142,81 @@ model MarketEquipment {
 }
 
 // ==========================================
-// 7. AI AGENTS MEMORY & CONTEXT
+// 7. CHARTER TEMPLATES SYSTEM
+// Гибкие шаблоны уставов RD проектов
+// ==========================================
+
+/// Тип блока шаблона устава
+enum CharterBlockType {
+  TEXT              // Текстовый блок
+  PARAMS_TABLE      // Таблица параметров
+  RISK_LIST         // Список рисков
+  COMPETITORS       // Анализ конкурентов
+  DECOMPOSITION     // Декомпозиция подсистем
+  GATE_REVIEW       // Ворота решений GO/NO-GO
+}
+
+/// Блок шаблона устава
+model TemplateBlock {
+  id              String          @id @default(uuid())
+  equipmentTypeId String
+  equipmentType   EquipmentType   @relation(fields: [equipmentTypeId], references: [id], onDelete: Cascade)
+
+  name            String          // "Привод и трансмиссия"
+  icon            String          // ""
+  description     String?         @db.Text // подсказка для инженера
+  blockType       CharterBlockType // TEXT, PARAMS_TABLE, etc.
+  isRequired      Boolean         @default(true)
+  sortOrder       Int             @default(0)
+
+  // AI-настройки
+  aiEnabled       Boolean         @default(true)
+  aiPrompt        String?         @db.Text // инструкция для AI-ассистента
+  aiModel         String          @default("deepseek") // "deepseek" | "claude"
+
+  // Поля внутри блока (JSON-схема)
+  fieldSchema     Json            @default("{}")
+  defaultValues   Json?
+
+  projectBlocks   ProjectBlock[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([equipmentTypeId, sortOrder])
+  @@map("template_blocks")
+}
+
+/// Статус блока устава проекта
+enum ProjectBlockStatus {
+  EMPTY
+  IN_PROGRESS
+  DONE
+}
+
+/// Заполненный блок конкретного проекта
+model ProjectBlock {
+  id              String          @id @default(uuid())
+  projectId       String
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  templateBlockId String
+  templateBlock   TemplateBlock   @relation(fields: [templateBlockId], references: [id])
+
+  data            Json            @default("{}") // заполненные поля
+  aiHistory       Json            @default("[]") // история диалога с AI
+  aiFlags         Json            @default("[]") // флаги рисков
+  status          ProjectBlockStatus @default(EMPTY)
+
+  updatedBy       String
+  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime        @default(now())
+
+  @@index([projectId])
+  @@map("project_blocks")
+}
+
+// ==========================================
+// 8. AI AGENTS MEMORY & CONTEXT
 // ==========================================
 
 /// Типы AI агентов

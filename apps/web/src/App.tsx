@@ -15,6 +15,8 @@ import { DashboardPage } from './pages/DashboardPage';
 import { EngineeringConsolePage } from './pages/EngineeringConsolePage';
 import EngineeringCalculatorsPage from './pages/EngineeringCalculatorsPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
+import { ProjectCharterPage } from './pages/ProjectCharterPage';
+import { TemplateEditorPage } from './pages/TemplateEditorPage';
 import { FinancialCalculatorsPage } from './pages/FinancialCalculatorsPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
@@ -170,6 +172,22 @@ function AppContent(): JSX.Element {
                 <ProtectedRoute>
                   <KnowledgeBasePage />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/:projectId/charter"
+              element={
+                <ProtectedRoute>
+                  <ProjectCharterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/templates"
+              element={
+                <AdminRoute>
+                  <TemplateEditorPage />
+                </AdminRoute>
               }
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

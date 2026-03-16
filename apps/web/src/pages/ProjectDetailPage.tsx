@@ -5,7 +5,7 @@
 
 import { type UseMutationResult } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { FileUpload } from '../components/attachments/FileUpload';
 import { FilesList } from '../components/attachments/FilesList';
@@ -242,6 +242,12 @@ export function ProjectDetailPage(): JSX.Element {
 
           {/* Actions */}
           <div className="flex gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <Link
+              to={`/projects/${id}/charter`}
+              className="flex-1 py-3 px-4 bg-purple-600 text-white font-medium rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-colors text-center"
+            >
+              📋 Устав
+            </Link>
             <button
               onClick={handleEdit}
               className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"

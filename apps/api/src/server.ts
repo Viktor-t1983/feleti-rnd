@@ -4,6 +4,7 @@ import fp from 'fastify-plugin';
 
 import { aiAgentsRoutes } from './modules/ai-agents/ai-agents.routes';
 import { authRoutes } from './modules/auth/auth.routes';
+import { charterRoutes } from './modules/charter';
 import { calculationsRoutes } from './modules/engineering/calculations/calculations.routes';
 import { knowledgeRoutes } from './modules/engineering/knowledge/knowledge.routes';
 import { productClassesRoutes } from './modules/engineering/product-classes/product-classes.routes';
@@ -123,6 +124,7 @@ void fastify.register(adminRoutes, { prefix: '/api' });
 void fastify.register(activityLogRoutes, { prefix: '/api' });
 void fastify.register(templatesRoutes, { prefix: '/api' });
 void fastify.register(knowledgeBaseRoutes, { prefix: '/api' });
+void fastify.register(charterRoutes, { prefix: '/api' });
 
 // Health check endpoint
 fastify.get('/health', () => {
