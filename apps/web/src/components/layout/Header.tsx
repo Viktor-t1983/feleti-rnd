@@ -78,7 +78,7 @@ export function Header() {
               to="/templates"
               className="text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400 transition-colors"
             >
-              🎨 Шаблоны
+              🎨 Шаблоны проектов
             </Link>
             <Link
               to="/activity"

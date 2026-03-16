@@ -44,7 +44,7 @@ interface ProjectCharter {
 
 // API functions
 const fetchProjectCharter = async (projectId: string): Promise<ProjectCharter> => {
-  const { data } = await api.get(`/projects/${projectId}/charter`);
+  const { data } = await api.get(`/api/projects/${projectId}/charter`);
   return data.data;
 };
 
@@ -53,7 +53,7 @@ const updateProjectBlock = async (
   blockId: string,
   data: { data?: unknown; status?: string }
 ) => {
-  const response = await api.put(`/projects/${projectId}/blocks/${blockId}`, data);
+  const response = await api.put(`/api/projects/${projectId}/blocks/${blockId}`, data);
   return response.data.data;
 };
 
@@ -62,7 +62,7 @@ const saveAiMessage = async (
   blockId: string,
   message: { role: 'user' | 'assistant'; content: string; flags?: unknown[] }
 ) => {
-  const response = await api.post(`/projects/${projectId}/blocks/${blockId}/ai-message`, message);
+  const response = await api.post(`/api/projects/${projectId}/blocks/${blockId}/ai-message`, message);
   return response.data.data;
 };
 
