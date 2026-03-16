@@ -62,7 +62,10 @@ const saveAiMessage = async (
   blockId: string,
   message: { role: 'user' | 'assistant'; content: string; flags?: unknown[] }
 ) => {
-  const response = await api.post(`/api/projects/${projectId}/blocks/${blockId}/ai-message`, message);
+  const response = await api.post(
+    `/api/projects/${projectId}/blocks/${blockId}/ai-message`,
+    message
+  );
   return response.data.data;
 };
 
@@ -101,6 +104,88 @@ const getFlagColor = (level: string) => {
   }
 };
 
+// Компонент для отображения данных блока (вместо сырого JSON)
+function BlockDataView({ data }: { data: Record<string, unknown> }) {
+  if (!data || Object.keys(data).length === 0) {
+    return (
+      <p style={{ color: '#64748b', fontSize: '13px' }}>
+        Данных пока нет. Нажмите AI-ассистент чтобы начать.
+      </p>
+    );
+  }
+
+  // Словарь для перевода ключей на русский
+  const keyLabels: Record<string, string> = {
+    product: 'Продукт',
+    client: 'Клиент',
+    pain: 'Боль клиента',
+    utp: 'УТП',
+    productivity: 'Производительность',
+    loadKg: 'Загрузка, кг',
+    chamberVolumeLiters: 'Объём чаши, л',
+    bladeDiameterMm: 'Диаметр лопасти, мм',
+    bladeCount: 'Кол-во лопастей',
+    shaftDiameterMm: 'Диаметр вала, мм',
+    maxRpm: 'Макс. обороты, об/мин',
+    drivePowerKw: 'Мощность привода, кВт',
+    driveCount: 'Кол-во приводов',
+    vacuumBar: 'Вакуум, бар',
+    vacuumPumpM3h: 'Производит. насоса, м³/ч',
+    sealType: 'Тип уплотнения',
+    totalPowerKw: 'Общая мощность, кВт',
+    lengthMm: 'Длина, мм',
+    weightKg: 'Масса, кг',
+    minCeilingMm: 'Мин. высота потолка, мм',
+    costUsd: 'Себестоимость, $',
+    priceUsd: 'Цена продажи, $',
+    marginPercent: 'Маржа, %',
+    salesYear1: 'Продажи год 1-2, шт/год',
+    salesYear3: 'Продажи год 3-5, шт/год',
+    developmentCostUsd: 'Затраты на разработку, $',
+    paybackYears: 'Окупаемость, лет',
+    status: null as unknown as string, // скрыть поле status
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      {Object.entries(data)
+        .filter(([key]) => keyLabels[key] !== null && key !== 'status')
+        .map(([key, value]) => (
+          <div
+            key={key}
+            style={{
+              background: '#0f172a',
+              borderRadius: '6px',
+              padding: '8px 12px',
+              borderLeft: '3px solid #334155',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '10px',
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+              }}
+            >
+              {keyLabels[key] || key}
+            </div>
+            <div
+              style={{
+                fontSize: '13px',
+                color: '#f1f5f9',
+                marginTop: '2px',
+                fontWeight: 600,
+              }}
+            >
+              {String(value)}
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+}
+
 export function ProjectCharterPage(): JSX.Element {
   const { projectId } = useParams<{ projectId: string }>();
   const queryClient = useQueryClient();
@@ -116,8 +201,13 @@ export function ProjectCharterPage(): JSX.Element {
 
   // Mutations
   const updateBlockMutation = useMutation({
-    mutationFn: ({ blockId, data }: { blockId: string; data: { data?: unknown; status?: string } }) =>
-      updateProjectBlock(projectId!, blockId, data),
+    mutationFn: ({
+      blockId,
+      data,
+    }: {
+      blockId: string;
+      data: { data?: unknown; status?: string };
+    }) => updateProjectBlock(projectId!, blockId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-charter', projectId] });
       toast.success('Блок обновлён');
@@ -140,7 +230,11 @@ export function ProjectCharterPage(): JSX.Element {
 
   // Calculate progress
   const totalBlocks = charter?.blocks?.length || 0;
-  const doneBlocks = charter?.blocks?.filter((b) => b.status === 'DONE').length || 0;
+  const doneBlocks =
+    charter?.blocks?.filter(
+      (b) =>
+        b.status === 'DONE' || (b.data && Object.keys(b.data).length > 0)
+    ).length || 0;
   const progress = totalBlocks > 0 ? Math.round((doneBlocks / totalBlocks) * 100) : 0;
 
   const handleSaveBlockData = (blockId: string, data: Record<string, unknown>) => {
@@ -191,9 +285,7 @@ export function ProjectCharterPage(): JSX.Element {
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                📋 Устав проекта
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">📋 Устав проекта</h1>
               <p className="mt-1 text-gray-600 dark:text-gray-400">
                 {charter.code} • {charter.name}
               </p>
@@ -268,9 +360,7 @@ export function ProjectCharterPage(): JSX.Element {
                 >
                   {getStatusLabel(block.status)}
                 </span>
-                <div className="text-gray-400">
-                  {expandedBlock === block.id ? '▼' : '▶'}
-                </div>
+                <div className="text-gray-400">{expandedBlock === block.id ? '▼' : '▶'}</div>
               </button>
 
               {/* Expanded content */}
@@ -302,19 +392,7 @@ export function ProjectCharterPage(): JSX.Element {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Данные блока
                       </label>
-                      <textarea
-                        value={JSON.stringify(block.data || {}, null, 2)}
-                        onChange={(e) => {
-                          try {
-                            const data = JSON.parse(e.target.value);
-                            handleSaveBlockData(block.id, data);
-                          } catch {
-                            // Invalid JSON, ignore
-                          }
-                        }}
-                        rows={6}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
-                      />
+                      <BlockDataView data={block.data || {}} />
                     </div>
 
                     {/* Action buttons */}
