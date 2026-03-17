@@ -131,18 +131,73 @@ function BlockDataView({ data }: { data: Record<string, unknown> }) {
     driveCount: 'Кол-во приводов',
     vacuumBar: 'Вакуум, бар',
     vacuumPumpM3h: 'Производит. насоса, м³/ч',
+    pumpCapacityM3h: 'Производит. насоса, м³/ч',
     sealType: 'Тип уплотнения',
     totalPowerKw: 'Общая мощность, кВт',
     lengthMm: 'Длина, мм',
     weightKg: 'Масса, кг',
     minCeilingMm: 'Мин. высота потолка, мм',
+    minCeilingHeightMm: 'Мин. высота потолка, мм',
+    widthMm: 'Ширина, мм',
+    heightMm: 'Высота, мм',
     costUsd: 'Себестоимость, $',
     priceUsd: 'Цена продажи, $',
     marginPercent: 'Маржа, %',
     salesYear1: 'Продажи год 1-2, шт/год',
+    salesYear2: 'Продажи год 2, шт/год',
     salesYear3: 'Продажи год 3-5, шт/год',
     developmentCostUsd: 'Затраты на разработку, $',
     paybackYears: 'Окупаемость, лет',
+    marginUsd: 'Маржа, $',
+    MARGINUSD: 'Маржа, $',
+    breakEvenUnits: 'Точка безубыточности, шт',
+    BREAKEVENUNITS: 'Точка безубыточности, шт',
+    SALESYEAR1: 'Продажи год 1-2, шт/год',
+    SALESYEAR2: 'Продажи год 2, шт/год',
+    SALESYEAR3: 'Продажи год 3-5, шт/год',
+    COSTUSD: 'Себестоимость, $',
+    PRICEUSD: 'Цена продажи, $',
+    MARGINPERCENT: 'Маржа, %',
+    PAYBACKYEARS: 'Окупаемость, лет',
+    DEVELOPMENTCOSTUSD: 'Затраты на разработку, $',
+    // Блок 2 - Рынок
+    marketSize: 'Объём рынка',
+    MARKETSIZE: 'Объём рынка',
+    priceRange: 'Ценовой диапазон',
+    PRICERANGE: 'Ценовой диапазон',
+    competitors: 'Конкуренты',
+    COMPETITORS: 'Конкуренты',
+    targetMarkets: 'Целевые рынки',
+    TARGETMARKETS: 'Целевые рынки',
+    // Блок 8 - GO/NO-GO
+    decision: 'Решение',
+    DECISION: 'Решение',
+    confidence: 'Уверенность, %',
+    CONFIDENCE: 'Уверенность, %',
+    reason: 'Обоснование',
+    REASON: 'Обоснование',
+    // Блок 5 - Вакуумная система
+    pumpType: 'Тип насоса',
+    PUMPTYPE: 'Тип насоса',
+    vacuumLevel: 'Уровень вакуума',
+    VACUUMLEVEL: 'Уровень вакуума',
+    pumpCapacity: 'Производительность насоса',
+    PUMPCAPACITY: 'Производительность насоса',
+    sealMaterial: 'Материал уплотнения',
+    SEALMATERIAL: 'Материал уплотнения',
+    // Блок 6 - Комплектации
+    loadKg: 'Загрузка, кг',
+    vfd: 'Частотник',
+    reducer: 'Редуктор',
+    coupling: 'Муфта',
+    motorType: 'Тип мотора',
+    vacuumPump: 'Вакуумный насос',
+    loadingSystem: 'Система загрузки',
+    // Блок 4 - Привод (русские ключи)
+    частотник: 'Частотный преобразователь',
+    редуктор: 'Редуктор',
+    муфта: 'Муфта',
+    типМотора: 'Тип мотора',
     status: null as unknown as string, // скрыть поле status
   };
 
@@ -232,11 +287,11 @@ export function ProjectCharterPage(): JSX.Element {
   const totalBlocks = charter?.blocks?.length || 0;
   const doneBlocks =
     charter?.blocks?.filter(
-      (b) =>
-        b.status === 'DONE' || (b.data && Object.keys(b.data).length > 0)
+      (b) => b.status === 'DONE' || (b.data && Object.keys(b.data).length > 0)
     ).length || 0;
   const progress = totalBlocks > 0 ? Math.round((doneBlocks / totalBlocks) * 100) : 0;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSaveBlockData = (blockId: string, data: Record<string, unknown>) => {
     updateBlockMutation.mutate({
       blockId,
