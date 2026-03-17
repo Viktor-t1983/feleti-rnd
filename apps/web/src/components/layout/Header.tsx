@@ -104,22 +104,27 @@ export function Header() {
             >
               📚 База знаний
             </Link>
-            {user?.role === 'Admin' && (
-              <>
-                <Link
-                  to="/admin/templates"
-                  className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
-                >
-                  📝 Шаблоны
-                </Link>
-                <Link
-                  to="/admin"
-                  className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
-                >
-                  🛡️ Админ
-                </Link>
-              </>
-            )}
+            {(() => {
+              const userRole = typeof user?.role === 'string' ? user.role : user?.role?.name;
+              return (
+                userRole === 'Admin' && (
+                  <>
+                    <Link
+                      to="/admin/templates"
+                      className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                    >
+                      📝 Шаблоны
+                    </Link>
+                    <Link
+                      to="/admin"
+                      className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors"
+                    >
+                      🛡️ Админ
+                    </Link>
+                  </>
+                )
+              );
+            })()}
           </nav>
 
           {/* Right side */}
@@ -186,15 +191,20 @@ export function Header() {
             {/* User info */}
             {user && (
               <>
-                {user.role === 'Admin' && (
-                  <Link
-                    to="/admin/settings"
-                    className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hidden sm:block transition-colors"
-                    title="Настройки системы"
-                  >
-                    ⚙️ Настройки
-                  </Link>
-                )}
+                {(() => {
+                  const userRole = typeof user.role === 'string' ? user.role : user.role?.name;
+                  return (
+                    userRole === 'Admin' && (
+                      <Link
+                        to="/admin/settings"
+                        className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hidden sm:block transition-colors"
+                        title="Настройки системы"
+                      >
+                        ⚙️ Настройки
+                      </Link>
+                    )
+                  );
+                })()}
                 <Link
                   to="/profile"
                   className="text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hidden sm:block transition-colors"
