@@ -186,6 +186,15 @@ export function Header() {
             {/* User info */}
             {user && (
               <>
+                {user.role === 'Admin' && (
+                  <Link
+                    to="/admin/settings"
+                    className="text-sm text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 hidden sm:block transition-colors"
+                    title="Настройки системы"
+                  >
+                    ⚙️ Настройки
+                  </Link>
+                )}
                 <Link
                   to="/profile"
                   className="text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hidden sm:block transition-colors"

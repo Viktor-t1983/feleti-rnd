@@ -22,7 +22,7 @@ import { authenticate, requireRole } from '../../middlewares/authenticate';
 export default async function settingsRoutes(fastify: FastifyInstance) {
   // All settings routes require authentication and ADMIN role
   fastify.addHook('onRequest', authenticate);
-  fastify.addHook('onRequest', requireRole(['ADMIN']));
+  fastify.addHook('onRequest', requireRole(['Admin']));
 
   /**
    * GET /api/settings
