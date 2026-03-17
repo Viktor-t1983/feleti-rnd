@@ -9,6 +9,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { queryClient } from './lib/queryClient';
 import { ActivityLogPage } from './pages/ActivityLogPage';
 import { AdminPage } from './pages/AdminPage';
+import AdminSettingsPage from './pages/admin/AdminSettingsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -115,6 +116,14 @@ function AppContent(): JSX.Element {
               element={
                 <AdminRoute>
                   <AdminPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <AdminRoute>
+                  <AdminSettingsPage />
                 </AdminRoute>
               }
             />

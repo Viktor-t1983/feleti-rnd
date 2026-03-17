@@ -173,13 +173,21 @@ export function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Заголовок */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            🛡️ Панель администратора
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Управление пользователями и системой
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              🛡️ Панель администратора
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Управление пользователями и системой
+            </p>
+          </div>
+          <a
+            href="/admin/settings"
+            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+          >
+            ⚙️ Настройки системы
+          </a>
         </div>
 
         {/* Статистика */}
