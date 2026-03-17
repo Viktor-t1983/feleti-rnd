@@ -1,0 +1,12 @@
+{
+  "costUsd": 87000,
+  "priceUsd": 155000,
+  "marginPercent": 44,
+  "marginUsd": 68000,
+  "salesYear1": 3,
+  "salesYear2": 5,
+  "salesYear3": 8,
+  "developmentCostUsd": 100000,
+  "paybackYears": 2,
+  "breakEvenUnits": 4
+}

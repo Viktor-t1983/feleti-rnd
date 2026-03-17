@@ -91,18 +91,19 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
-          {
-            urlPattern: /^https?:\/\/.*\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 300,
-              },
-              networkTimeoutSeconds: 10,
-            },
-          },
+          // API requests - NO CACHING to avoid auth issues
+          // {
+          //   urlPattern: /^https?:\/\/.*\/api\/.*/i,
+          //   handler: 'NetworkFirst',
+          //   options: {
+          //     cacheName: 'api-cache',
+          //     expiration: {
+          //       maxEntries: 100,
+          //       maxAgeSeconds: 300,
+          //     },
+          //     networkTimeoutSeconds: 10,
+          //   },
+          // },
           {
             urlPattern: /^https?:\/\/.*\.(png|jpg|jpeg|svg|gif)/i,
             handler: 'CacheFirst',

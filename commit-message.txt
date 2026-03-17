@@ -1,0 +1,11 @@
+feat(calculations): add calculation save functionality to DB
+
+- Updated Calculation model with type, category, notes fields
+- Made blockId optional for simple calculations
+- Added CalculationType and CalculationResultCategory enums
+- Added saveCalculation method to calculations service
+- Added new API endpoints: GET /projects/:id/calculations, GET /projects/:id/calculations/summary, GET /calculations/:id, DELETE /calculations/:id
+- Fixed routes paths (removed duplicate /api prefix)
+- Updated rateLimit.ts to skip localhost
+- Updated server.ts to register calculations routes before projects routes
+- Added unit tests for calculations service

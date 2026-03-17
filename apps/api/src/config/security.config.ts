@@ -80,7 +80,10 @@ export const HELMET_CONFIG: HelmetConfig = {
 
 // CORS configuration
 export const CORS_CONFIG: FastifyCorsOptions = {
-  origin: process.env['CORS_ORIGIN']?.split(',') || ['http://localhost:5173'],
+  origin: process.env['CORS_ORIGIN']?.split(',') || [
+    'http://localhost:5173', // Vite dev server
+    'http://localhost:8080', // Docker/nginx production
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [

@@ -1,0 +1,19 @@
+{
+  "loadKg": 3000,
+  "chamberVolumeLiters": 4000,
+  "bladeDiameterMm": 600,
+  "bladeCount": 16,
+  "shaftDiameterMm": 130,
+  "maxRpm": 40,
+  "drivePowerKw": 45,
+  "driveCount": 2,
+  "vacuumBar": -0.8,
+  "vacuumPumpM3h": 90,
+  "sealType": "Торцевое механическое уплотнение (2 шт)",
+  "totalPowerKw": 120,
+  "lengthMm": 5000,
+  "widthMm": 2200,
+  "heightMm": 2800,
+  "weightKg": 5500,
+  "minCeilingMm": 5000
+}

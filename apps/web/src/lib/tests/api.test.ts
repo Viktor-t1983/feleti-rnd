@@ -5,7 +5,7 @@ vi.mock('axios', () => ({
   default: {
     create: vi.fn(() => ({
       defaults: {
-        baseURL: 'http://localhost:3001',
+        baseURL: '',
         headers: { 'Content-Type': 'application/json' },
       },
       interceptors: {
@@ -33,7 +33,7 @@ describe('API Client', () => {
 
   describe('api instance', () => {
     it('should have correct baseURL', () => {
-      expect(api.defaults.baseURL).toBe('http://localhost:3001');
+      expect(api.defaults.baseURL).toBe('');
     });
 
     it('should have correct default headers', () => {

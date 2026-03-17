@@ -70,8 +70,8 @@ export function FilesList({ projectId }: FilesListProps) {
   });
 
   const handleDownload = (id: string, _name: string) => {
-    const apiUrl = import.meta.env['VITE_API_URL'] || 'http://localhost:3001';
-    window.open(`${apiUrl}/api/attachments/${id}/download`, '_blank');
+    // Используем относительный путь для работы через nginx proxy
+    window.open(`/api/attachments/${id}/download`, '_blank');
   };
 
   const handleDelete = (id: string, name: string) => {

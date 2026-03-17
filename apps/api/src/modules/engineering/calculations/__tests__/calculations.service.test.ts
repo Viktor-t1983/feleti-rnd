@@ -1,23 +1,33 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- Mock data for testing */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { CalculationsService } from '../calculations.service';
-import { prisma } from '../../../lib/prisma';
 import type { CalculationRequest } from '../../types';
 
-// Mock prisma
-vi.mock('../../../lib/prisma', () => ({
-  prisma: {
-    calculationBlock: {
-      findUnique: vi.fn(),
-    },
-    calculation: {
-      create: vi.fn(),
-      findMany: vi.fn(),
-      count: vi.fn(),
-      groupBy: vi.fn(),
-      aggregate: vi.fn(),
-    },
+// Create hoisted mock for prisma
+const mockPrisma = vi.hoisted(() => ({
+  calculationBlock: {
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    create: vi.fn(),
   },
+  calculation: {
+    create: vi.fn(),
+    findMany: vi.fn(),
+    count: vi.fn(),
+    groupBy: vi.fn(),
+    aggregate: vi.fn(),
+  },
+}));
+
+// Mock @prisma/client before any imports
+vi.mock('@prisma/client', () => ({
+  Prisma: {},
+  PrismaClient: vi.fn(() => mockPrisma),
+}));
+
+// Mock the prisma lib to return our mock
+vi.mock('../../../lib/prisma', () => ({
+  prisma: mockPrisma,
 }));
 
 // Mock rules engine
@@ -27,11 +37,15 @@ vi.mock('../rules/rules-engine.service', () => ({
   },
 }));
 
+// Import service after mocks are set up
+import { CalculationsService } from '../calculations.service';
+
 describe('CalculationsService', () => {
-  const service = new CalculationsService();
+  let service: CalculationsService;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    service = new CalculationsService();
   });
 
   describe('execute', () => {
@@ -56,8 +70,8 @@ describe('CalculationsService', () => {
     };
 
     it('should execute calculation successfully', async () => {
-      vi.mocked(prisma.calculationBlock.findUnique).mockResolvedValue(mockBlock as any);
-      vi.mocked(prisma.calculation.create).mockResolvedValue({
+      mockPrisma.calculationBlock.findUnique.mockResolvedValue(mockBlock as any);
+      mockPrisma.calculation.create.mockResolvedValue({
         id: 'calc-1',
         status: 'SUCCESS',
         createdAt: new Date(),
@@ -66,7 +80,7 @@ describe('CalculationsService', () => {
       const result = await service.execute(mockRequest);
 
       expect(result.status).toBe('SUCCESS');
-      expect(prisma.calculation.create).toHaveBeenCalledWith(
+      expect(mockPrisma.calculation.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             projectId: 'proj-1',
@@ -78,13 +92,13 @@ describe('CalculationsService', () => {
     });
 
     it('should fail when block not found', async () => {
-      vi.mocked(prisma.calculationBlock.findUnique).mockResolvedValue(null);
+      mockPrisma.calculationBlock.findUnique.mockResolvedValue(null);
 
       await expect(service.execute(mockRequest)).rejects.toThrow('Block TEST-BLOCK not found');
     });
 
     it('should fail when block is inactive', async () => {
-      vi.mocked(prisma.calculationBlock.findUnique).mockResolvedValue({
+      mockPrisma.calculationBlock.findUnique.mockResolvedValue({
         ...mockBlock,
         active: false,
       } as any);
@@ -93,8 +107,8 @@ describe('CalculationsService', () => {
     });
 
     it('should validate inputs and fail on missing required field', async () => {
-      vi.mocked(prisma.calculationBlock.findUnique).mockResolvedValue(mockBlock as any);
-      vi.mocked(prisma.calculation.create).mockResolvedValue({
+      mockPrisma.calculationBlock.findUnique.mockResolvedValue(mockBlock as any);
+      mockPrisma.calculation.create.mockResolvedValue({
         id: 'calc-failed',
         status: 'FAILED',
         createdAt: new Date(),
@@ -118,8 +132,8 @@ describe('CalculationsService', () => {
         { id: 'calc-2', projectId: 'proj-1', type: 'irr' },
       ];
 
-      vi.mocked(prisma.calculation.findMany).mockResolvedValue(mockCalculations as any);
-      vi.mocked(prisma.calculation.count).mockResolvedValue(2);
+      mockPrisma.calculation.findMany.mockResolvedValue(mockCalculations as any);
+      mockPrisma.calculation.count.mockResolvedValue(2);
 
       const result = await service.getProjectCalculations('proj-1');
 
@@ -128,12 +142,12 @@ describe('CalculationsService', () => {
     });
 
     it('should filter by status', async () => {
-      vi.mocked(prisma.calculation.findMany).mockResolvedValue([]);
-      vi.mocked(prisma.calculation.count).mockResolvedValue(0);
+      mockPrisma.calculation.findMany.mockResolvedValue([]);
+      mockPrisma.calculation.count.mockResolvedValue(0);
 
       await service.getProjectCalculations('proj-1', { status: 'SUCCESS' });
 
-      expect(prisma.calculation.findMany).toHaveBeenCalledWith(
+      expect(mockPrisma.calculation.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             projectId: 'proj-1',
@@ -146,17 +160,17 @@ describe('CalculationsService', () => {
 
   describe('getCalculationStats', () => {
     it('should return calculation statistics', async () => {
-      vi.mocked(prisma.calculation.count).mockResolvedValue(10);
-      vi.mocked(prisma.calculation.groupBy).mockResolvedValue([
+      mockPrisma.calculation.count.mockResolvedValue(10);
+      mockPrisma.calculation.groupBy.mockResolvedValue([
         { status: 'SUCCESS', _count: 7 },
         { status: 'FAILED', _count: 2 },
         { status: 'WARNING', _count: 1 },
       ] as any);
-      vi.mocked(prisma.calculationBlock.findMany).mockResolvedValue([
+      mockPrisma.calculationBlock.findMany.mockResolvedValue([
         { category: 'financial', _count: { calculations: 5 } },
         { category: 'engineering', _count: { calculations: 5 } },
       ] as any);
-      vi.mocked(prisma.calculation.aggregate).mockResolvedValue({
+      mockPrisma.calculation.aggregate.mockResolvedValue({
         _avg: { executionTime: 150 },
       } as any);
 
@@ -179,8 +193,12 @@ describe('CalculationsService', () => {
     };
 
     it('should save calculation successfully', async () => {
-      vi.mocked(prisma.calculationBlock.findFirst).mockResolvedValue(null);
-      vi.mocked(prisma.calculation.create).mockResolvedValue({
+      mockPrisma.calculationBlock.findFirst.mockResolvedValue(null);
+      mockPrisma.calculationBlock.create.mockResolvedValue({
+        id: 'block-generic-npv',
+        code: 'GENERIC_NPV',
+      } as any);
+      mockPrisma.calculation.create.mockResolvedValue({
         id: 'calc-1',
         type: 'npv',
         category: 'FINANCIAL',
@@ -193,11 +211,11 @@ describe('CalculationsService', () => {
 
       expect(result.type).toBe('npv');
       expect(result.category).toBe('FINANCIAL');
-      expect(prisma.calculation.create).toHaveBeenCalledWith(
+      expect(mockPrisma.calculation.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             projectId: 'proj-1',
-            type: 'npv',
+            type: 'NPV',
             category: 'FINANCIAL',
             inputData: mockSaveData.inputData,
             resultData: mockSaveData.resultData,
@@ -210,16 +228,16 @@ describe('CalculationsService', () => {
 
     it('should link to existing generic block', async () => {
       const mockBlock = { id: 'block-npv', code: 'GENERIC_NPV' };
-      vi.mocked(prisma.calculationBlock.findFirst).mockResolvedValue(mockBlock as any);
-      vi.mocked(prisma.calculation.create).mockResolvedValue({
+      mockPrisma.calculationBlock.findFirst.mockResolvedValue(mockBlock as any);
+      mockPrisma.calculation.create.mockResolvedValue({
         id: 'calc-2',
         blockId: 'block-npv',
-        type: 'npv',
+        type: 'NPV',
       } as any);
 
       await service.saveCalculation(mockSaveData, 'user-1');
 
-      expect(prisma.calculation.create).toHaveBeenCalledWith(
+      expect(mockPrisma.calculation.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             blockId: 'block-npv',
@@ -237,10 +255,14 @@ describe('CalculationsService', () => {
         resultData: { stress: 250, safety_factor: 2.5 },
       };
 
-      vi.mocked(prisma.calculationBlock.findFirst).mockResolvedValue(null);
-      vi.mocked(prisma.calculation.create).mockResolvedValue({
+      mockPrisma.calculationBlock.findFirst.mockResolvedValue(null);
+      mockPrisma.calculationBlock.create.mockResolvedValue({
+        id: 'block-generic-shaft',
+        code: 'GENERIC_SHAFT_STRENGTH',
+      } as any);
+      mockPrisma.calculation.create.mockResolvedValue({
         id: 'calc-eng-1',
-        type: 'shaft_strength',
+        type: 'SHAFT_STRENGTH',
         category: 'ENGINEERING',
       } as any);
 
@@ -253,13 +275,25 @@ describe('CalculationsService', () => {
   describe('getCalculationSummary', () => {
     it('should return summary with financial and engineering counts', async () => {
       const mockCalculations = [
-        { id: 'calc-1', type: 'npv', category: 'FINANCIAL', createdAt: new Date() },
-        { id: 'calc-2', type: 'irr', category: 'FINANCIAL', createdAt: new Date() },
-        { id: 'calc-3', type: 'shaft_strength', category: 'ENGINEERING', createdAt: new Date() },
-        { id: 'calc-4', type: 'thermal', category: 'ENGINEERING', createdAt: new Date() },
+        { id: 'calc-1', type: 'NPV', category: 'FINANCIAL', createdAt: new Date(), block: null },
+        { id: 'calc-2', type: 'IRR', category: 'FINANCIAL', createdAt: new Date(), block: null },
+        {
+          id: 'calc-3',
+          type: 'SHAFT_STRENGTH',
+          category: 'ENGINEERING',
+          createdAt: new Date(),
+          block: null,
+        },
+        {
+          id: 'calc-4',
+          type: 'THERMAL',
+          category: 'ENGINEERING',
+          createdAt: new Date(),
+          block: null,
+        },
       ];
 
-      vi.mocked(prisma.calculation.findMany).mockResolvedValue(mockCalculations as any);
+      mockPrisma.calculation.findMany.mockResolvedValue(mockCalculations as any);
 
       const summary = await service.getCalculationSummary('proj-1');
 
@@ -267,15 +301,15 @@ describe('CalculationsService', () => {
       expect(summary.financial).toBe(2);
       expect(summary.engineering).toBe(2);
       expect(summary.byType).toEqual({
-        npv: 1,
-        irr: 1,
-        shaft_strength: 1,
-        thermal: 1,
+        NPV: 1,
+        IRR: 1,
+        SHAFT_STRENGTH: 1,
+        THERMAL: 1,
       });
     });
 
     it('should handle empty calculations list', async () => {
-      vi.mocked(prisma.calculation.findMany).mockResolvedValue([]);
+      mockPrisma.calculation.findMany.mockResolvedValue([]);
 
       const summary = await service.getCalculationSummary('proj-1');
 
@@ -291,19 +325,19 @@ describe('CalculationsService', () => {
           id: 'calc-1',
           type: null,
           category: null,
-          block: { category: 'ECONOMIC' },
+          block: { code: 'ECONOMIC_BLOCK', category: 'ECONOMIC' },
           createdAt: new Date(),
         },
         {
           id: 'calc-2',
           type: null,
           category: null,
-          block: { category: 'THERMAL' },
+          block: { code: 'THERMAL_BLOCK', category: 'THERMAL' },
           createdAt: new Date(),
         },
       ];
 
-      vi.mocked(prisma.calculation.findMany).mockResolvedValue(mockCalculations as any);
+      mockPrisma.calculation.findMany.mockResolvedValue(mockCalculations as any);
 
       const summary = await service.getCalculationSummary('proj-1');
 

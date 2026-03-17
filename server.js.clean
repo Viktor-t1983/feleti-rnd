@@ -1,0 +1,135 @@
+﻿"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const cookie_1 = __importDefault(require("@fastify/cookie"));
+const fastify_1 = __importDefault(require("fastify"));
+const fastify_plugin_1 = __importDefault(require("fastify-plugin"));
+const ai_agents_routes_1 = require("./modules/ai-agents/ai-agents.routes");
+const auth_routes_1 = require("./modules/auth/auth.routes");
+const calculations_routes_1 = require("./modules/engineering/calculations/calculations.routes");
+const knowledge_routes_1 = require("./modules/engineering/knowledge/knowledge.routes");
+const product_classes_routes_1 = require("./modules/engineering/product-classes/product-classes.routes");
+const rules_routes_1 = require("./modules/engineering/rules/rules.routes");
+const validation_routes_1 = require("./modules/engineering/validation/validation.routes");
+const projects_routes_1 = require("./modules/projects/projects.routes");
+const search_routes_1 = require("./modules/search/search.routes");
+const users_routes_1 = require("./modules/users/users.routes");
+const errorHandler_1 = require("./plugins/errorHandler");
+const jwt_1 = __importDefault(require("./plugins/jwt"));
+const rateLimit_1 = __importDefault(require("./plugins/rateLimit"));
+const security_1 = __importDefault(require("./plugins/security"));
+const swagger_1 = __importDefault(require("./plugins/swagger"));
+const logger_1 = require("./utils/logger");
+// Initialize Fastify with logger configuration
+const fastify = (0, fastify_1.default)({
+    logger: {
+        level: process.env['LOG_LEVEL'] || 'info',
+    },
+});
+// Register plugins in specified order
+void fastify.register(errorHandler_1.errorHandler);
+void fastify.register(security_1.default);
+void fastify.register(rateLimit_1.default);
+// Register cookie plugin first (required by JWT plugin)
+void fastify.register((0, fastify_plugin_1.default)(cookie_1.default));
+// Validate required environment variables before starting
+function validateEnv() {
+    const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'DATABASE_URL'];
+    const missing = [];
+    for (const key of required) {
+        if (!process.env[key]) {
+            missing.push(key);
+        }
+    }
+    if (missing.length > 0) {
+        throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    }
+    const jwtSecret = process.env['JWT_SECRET'];
+    const refreshSecret = process.env['JWT_REFRESH_SECRET'];
+    if (jwtSecret.length < 32 || refreshSecret.length < 32) {
+        throw new Error('JWT_SECRET and JWT_REFRESH_SECRET must be at least 32 characters long');
+    }
+}
+// Validate environment on module load
+validateEnv();
+// Register JWT plugin (which includes cookie registration as a dependency)
+void fastify.register(jwt_1.default, {
+    secret: process.env['JWT_SECRET'],
+    refreshSecret: process.env['JWT_REFRESH_SECRET'],
+    cookie: {
+        accessTokenName: 'access_token',
+        refreshTokenName: 'refresh_token',
+        signed: false,
+    },
+});
+void fastify.register(swagger_1.default);
+// Register auth routes
+void fastify.register(auth_routes_1.authRoutes, { prefix: '/api' });
+// Register calculations routes (BEFORE projects routes to avoid route conflicts)
+void fastify.register(calculations_routes_1.calculationsRoutes, { prefix: '/api' });
+// Register projects routes
+void fastify.register(projects_routes_1.projectsRoutes, { prefix: '/api' });
+// Register users routes
+void fastify.register(users_routes_1.usersRoutes, { prefix: '/api' });
+// Register search routes
+void fastify.register(search_routes_1.searchRoutes, { prefix: '/api' });
+// Register knowledge routes
+void fastify.register(knowledge_routes_1.knowledgeRoutes, { prefix: '/api' });
+// Register rules routes
+void fastify.register(rules_routes_1.rulesRoutes, { prefix: '/api' });
+// Register validation routes
+void fastify.register(validation_routes_1.validationRoutes, { prefix: '/api' });
+// Register AI Agents routes
+void fastify.register(ai_agents_routes_1.aiAgentsRoutes, { prefix: '/api' });
+// Register product-classes routes
+void fastify.register(product_classes_routes_1.productClassesRoutes, { prefix: '/api' });
+const activity_log_routes_1 = require("./modules/activity-log/activity-log.routes");
+const admin_routes_1 = require("./modules/admin/admin.routes");
+const analytics_1 = require("./modules/analytics");
+const attachments_routes_1 = require("./modules/attachments/attachments.routes");
+const calendar_routes_1 = require("./modules/calendar/calendar.routes");
+const comments_routes_1 = require("./modules/comments/comments.routes");
+const notifications_routes_1 = require("./modules/notifications/notifications.routes");
+const reports_routes_1 = require("./modules/reports/reports.routes");
+const templates_routes_1 = require("./modules/templates/templates.routes");
+void fastify.register(attachments_routes_1.attachmentsRoutes, { prefix: '/api' });
+void fastify.register(analytics_1.analyticsRoutes, { prefix: '/api' });
+void fastify.register(reports_routes_1.reportsRoutes, { prefix: '/api' });
+void fastify.register(calendar_routes_1.calendarRoutes, { prefix: '/api' });
+void fastify.register(comments_routes_1.commentsRoutes, { prefix: '/api' });
+void fastify.register(notifications_routes_1.notificationsRoutes, { prefix: '/api' });
+void fastify.register(admin_routes_1.adminRoutes, { prefix: '/api' });
+void fastify.register(activity_log_routes_1.activityLogRoutes, { prefix: '/api' });
+void fastify.register(templates_routes_1.templatesRoutes, { prefix: '/api' });
+// Health check endpoint
+fastify.get('/health', () => {
+    return { status: 'ok' };
+});
+// Redirect root to docs
+fastify.get('/', (_request, reply) => {
+    return reply.redirect('/docs');
+});
+п»ї// Stub routes for missing endpoints
+fastify.get("/api/users", async () => {
+    return { message: "not implemented" };
+});
+fastify.get("/api/validation-gates", async () => {
+    return { message: "not implemented" };
+});
+const start = () => {
+    try {
+        const port = parseInt(process.env['PORT'] || '3001');
+        const host = process.env['HOST'] || '0.0.0.0';
+        void fastify.listen({ port, host });
+        logger_1.logger.info(`Server running on http://localhost:${port}`);
+        logger_1.logger.info(`Swagger documentation available at http://localhost:${port}/docs`);
+    }
+    catch (err) {
+        logger_1.logger.error(err);
+        process.exit(1);
+    }
+};
+void start();
+//# sourceMappingURL=server.js.map

@@ -1,0 +1,34 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FELETI R&D Management System API",
+    "description": "API для управления исследованиями и разработками в системе FELETI",
+    "version": "1.0.0",
+    "contact": { "name": "FELETI Development Team", "email": "dev@feleti.com" },
+    "license": { "name": "MIT", "url": "https://opensource.org/licenses/MIT" }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Введите JWT токен в формате: Bearer <token>"
+      }
+    },
+    "schemas": {}
+  },
+  "paths": {},
+  "servers": [
+    { "url": "http://localhost:3001", "description": "Development server" },
+    { "url": "https://api.feleti.com", "description": "Production server" }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Endpoints для аутентификации и управления пользователями"
+    },
+    { "name": "Health", "description": "Проверка работоспособности сервиса" }
+  ],
+  "externalDocs": { "description": "Документация проекта", "url": "https://docs.feleti.com" }
+}
