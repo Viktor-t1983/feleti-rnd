@@ -114,6 +114,7 @@ import { commentsRoutes } from './modules/comments/comments.routes';
 import { notificationsRoutes } from './modules/notifications/notifications.routes';
 import { reportsRoutes } from './modules/reports/reports.routes';
 import { templatesRoutes } from './modules/templates/templates.routes';
+import settingsRoutes from './modules/settings/settings.routes';
 void fastify.register(attachmentsRoutes, { prefix: '/api' });
 void fastify.register(analyticsRoutes, { prefix: '/api' });
 void fastify.register(reportsRoutes, { prefix: '/api' });
@@ -124,6 +125,7 @@ void fastify.register(adminRoutes, { prefix: '/api' });
 void fastify.register(activityLogRoutes, { prefix: '/api' });
 void fastify.register(templatesRoutes, { prefix: '/api' });
 void fastify.register(knowledgeBaseRoutes, { prefix: '/api' });
+void fastify.register(settingsRoutes, { prefix: '/api/settings' });
 void fastify.register(charterRoutes, { prefix: '/api' });
 
 // Health check endpoint

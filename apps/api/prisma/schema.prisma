@@ -1266,6 +1266,45 @@ model AgentMemory {
 }
 
 // ==========================================
+// 9. SYSTEM SETTINGS
+// Конфигурация системы и API ключи
+// ==========================================
+
+/// Тип значения настройки
+enum SettingValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+  ENCRYPTED  // Зашифрованное значение (для API ключей)
+}
+
+/// Системная настройка
+model SystemSetting {
+  id            String          @id @default(uuid())
+  key           String          @unique // Название настройки: "ai.openai.api_key"
+  value         String          @db.Text // Значение (может быть зашифрованным)
+  valueType     SettingValueType @default(STRING)
+  
+  // Метаданные
+  category      String          @default("general") // general, ai, email, security
+  label         String          // Отображаемое название
+  description   String?         @db.Text // Описание для админа
+  
+  // Для зашифрованных значений
+  isEncrypted   Boolean         @default(false)
+  
+  // Кто изменил
+  updatedById   String?
+  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime        @default(now())
+  
+  @@index([category])
+  @@index([key])
+  @@map("system_settings")
+}
+
+// ==========================================
 // ОБНОВЛЕНИЯ СУЩЕСТВУЮЩИХ МОДЕЛЕЙ
 // ==========================================
 // Note: User and Project models are updated with Engineering Platform relations
