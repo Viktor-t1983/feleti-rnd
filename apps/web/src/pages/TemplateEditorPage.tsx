@@ -41,27 +41,27 @@ const BLOCK_TYPE_OPTIONS = [
 
 // API functions
 const fetchEquipmentTypes = async (): Promise<EquipmentType[]> => {
-  const { data } = await api.get('/knowledge/equipment?limit=100');
+  const { data } = await api.get('/api/knowledge/equipment?limit=100');
   return data.items;
 };
 
 const fetchTemplateBlocks = async (equipmentTypeId: string): Promise<TemplateBlock[]> => {
-  const { data } = await api.get(`/charter/templates/${equipmentTypeId}/blocks`);
+  const { data } = await api.get(`/api/charter/templates/${equipmentTypeId}/blocks`);
   return data.data;
 };
 
 const createTemplateBlock = async (equipmentTypeId: string, block: Partial<TemplateBlock>) => {
-  const { data } = await api.post(`/charter/templates/${equipmentTypeId}/blocks`, block);
+  const { data } = await api.post(`/api/charter/templates/${equipmentTypeId}/blocks`, block);
   return data.data;
 };
 
 const updateTemplateBlock = async (id: string, block: Partial<TemplateBlock>) => {
-  const { data } = await api.put(`/charter/template-blocks/${id}`, block);
+  const { data } = await api.put(`/api/charter/template-blocks/${id}`, block);
   return data.data;
 };
 
 const deleteTemplateBlock = async (id: string) => {
-  await api.delete(`/charter/template-blocks/${id}`);
+  await api.delete(`/api/charter/template-blocks/${id}`);
 };
 
 export function TemplateEditorPage(): JSX.Element {
