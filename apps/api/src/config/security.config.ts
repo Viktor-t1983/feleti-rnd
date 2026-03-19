@@ -115,13 +115,18 @@ export const RATE_LIMIT_CONFIG: RateLimitPluginOptions = {
     const ip = req.ip ?? 'unknown';
     return forwarded ? (forwarded.split(',')[0]?.trim() ?? ip) : ip;
   },
+  // Skip rate limiting for local/development addresses
+  skipOnError: true,
+  allowList: ['127.0.0.1', '::1', 'localhost', '172.18.0.0/16', '192.168.0.0/16'],
 };
 
 // Stricter rate limiting for auth endpoints (login, register, password reset)
 export const RATE_LIMIT_AUTH_CONFIG: RateLimitPluginOptions = {
-  max: parseInt(process.env['RATE_LIMIT_AUTH_MAX'] || '5'), // Only 5 attempts
-  timeWindow: process.env['RATE_LIMIT_AUTH_WINDOW'] || '15 minutes', // 15 minutes lockout
+  max: parseInt(process.env['RATE_LIMIT_AUTH_MAX'] || '20'), // 20 attempts per window
+  timeWindow: process.env['RATE_LIMIT_AUTH_WINDOW'] || '1 minute', // 1 minute window
   continueExceeding: false,
+  skipOnError: true,
+  allowList: ['127.0.0.1', '::1', 'localhost', '172.18.0.0/16', '192.168.0.0/16'],
   addHeadersOnExceeding: {
     'x-ratelimit-limit': true,
     'x-ratelimit-remaining': true,
