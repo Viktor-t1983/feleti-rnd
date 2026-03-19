@@ -438,6 +438,71 @@ docker-compose exec api npx prisma studio
 
 ---
 
+## 🔒 Critical Configuration Rules
+
+### ⚠️ NEVER BREAK LOGIN - ВХОД ДОЛЖЕН ВСЕГДА РАБОТАТЬ
+
+**Причина поломки входа (2026-03-19):**
+
+- `VITE_API_URL=` был пустым в `apps/web/.env` → Network Error
+- `nginx.conf` проксировал на `http://api:3001/` вместо `http://api:3001/api/` → 404
+- Rate limiting 5 попыток/15 минут → 429 Too Many Requests
+
+**✅ ПРАВИЛА чтобы не сломать вход:**
+
+1. **apps/web/.env - VITE_API_URL должен быть:**
+
+   ```bash
+   VITE_API_URL=/api
+   ```
+
+   ❌ Не оставляй пустым: `VITE_API_URL=`
+
+2. **apps/web/nginx.conf - proxy_pass должен включать /api:**
+
+   ```nginx
+   location /api/ {
+       proxy_pass http://api:3001/api/;  # ✅ С /api/
+       # ...
+   }
+   ```
+
+   ❌ Не проксируй без /api/: `proxy_pass http://api:3001/;`
+
+3. **apps/api/src/config/security.config.ts - Rate Limit:**
+
+   ```typescript
+   RATE_LIMIT_AUTH_CONFIG = {
+     max: 20, // ✅ Минимум 20
+     timeWindow: '1 minute',
+     allowList: ['127.0.0.1', '::1', 'localhost', '172.18.0.0/16'],
+   };
+   ```
+
+4. **apps/api/src/config/security.config.ts - CORS:**
+
+   ```typescript
+   CORS_CONFIG: {
+     origin: [
+       'http://localhost',      // ✅ Обязательно
+       'http://localhost:80',
+       'http://localhost:8080', // Docker
+       'http://localhost:5173', // Dev
+       'http://127.0.0.1',
+     ],
+   }
+   ```
+
+5. **Проверка перед коммитом:**
+   ```bash
+   # Должно работать 3 раза подряд:
+   curl -X POST http://localhost:8080/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"admin@feleti.com","password":"admin123"}'
+   ```
+
+---
+
 ## 🆘 Known Limitations
 
 ### Calc Engine (Python)
