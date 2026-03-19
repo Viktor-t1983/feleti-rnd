@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 // Types
 interface SystemSetting {
@@ -114,12 +115,11 @@ export default function AdminSettingsPage() {
   return (
     <div className="min-h-screen bg-slate-900 p-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">⚙️ Настройки системы</h1>
-        <p className="text-slate-400">
-          Управление API ключами, параметрами AI и другими системными настройками
-        </p>
-      </div>
+      <PageHeader
+        title="⚙️ Настройки системы"
+        subtitle="Управление API ключами, параметрами AI и другими системными настройками"
+        backTo="/admin"
+      />
 
       {/* Settings by category */}
       <div className="space-y-8">

@@ -1,7 +1,67 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, SettingValueType } from '@prisma/client';
 import * as bcrypt from 'bcryptjs'; // ← ВАЖНО: bcryptjs!
 
 const prisma = new PrismaClient();
+
+/**
+ * Дефолтные системные настройки AI
+ */
+const defaultSystemSettings = [
+  {
+    key: 'ai.provider',
+    value: 'deepseek',
+    valueType: SettingValueType.STRING,
+    category: 'ai',
+    label: 'Провайдер AI',
+    description: 'Провайдер AI: deepseek, openai, anthropic, kimi',
+    isEncrypted: false,
+  },
+  {
+    key: 'ai.model',
+    value: 'deepseek-chat',
+    valueType: SettingValueType.STRING,
+    category: 'ai',
+    label: 'Модель AI',
+    description: 'Модель AI (зависит от провайдера)',
+    isEncrypted: false,
+  },
+  {
+    key: 'ai.api_key',
+    value: '',
+    valueType: SettingValueType.ENCRYPTED,
+    category: 'ai',
+    label: 'API Ключ',
+    description: 'API ключ провайдера (хранится зашифрованно, не попадает в git)',
+    isEncrypted: true,
+  },
+  {
+    key: 'ai.api_url',
+    value: 'https://api.deepseek.com/v1/chat/completions',
+    valueType: SettingValueType.STRING,
+    category: 'ai',
+    label: 'API URL',
+    description: 'URL API провайдера',
+    isEncrypted: false,
+  },
+  {
+    key: 'ai.enabled',
+    value: 'true',
+    valueType: SettingValueType.BOOLEAN,
+    category: 'ai',
+    label: 'AI Ассистент включен',
+    description: 'Глобальное включение/выключение AI-ассистента',
+    isEncrypted: false,
+  },
+  {
+    key: 'ai.max_tokens',
+    value: '1000',
+    valueType: SettingValueType.NUMBER,
+    category: 'ai',
+    label: 'Максимум токенов',
+    description: 'Максимальное количество токенов в ответе AI',
+    isEncrypted: false,
+  },
+];
 
 async function main() {
   // Очищаем
@@ -145,6 +205,22 @@ async function main() {
       { projectId: p2.id, userId: engineer.id, role: 'Lead Engineer' },
     ],
   });
+
+  // Системные настройки AI (upsert чтобы не перезаписывать существующие)
+  // eslint-disable-next-line no-console
+  console.log('⚙️ Создание системных настроек AI...');
+  for (const setting of defaultSystemSettings) {
+    await prisma.systemSetting.upsert({
+      where: { key: setting.key },
+      update: {}, // Не обновляем существующие
+      create: {
+        ...setting,
+        updatedById: admin.id,
+      },
+    });
+  }
+  // eslint-disable-next-line no-console
+  console.log('✅ Системные настройки AI созданы');
 }
 
 main()

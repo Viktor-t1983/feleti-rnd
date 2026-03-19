@@ -7,6 +7,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { api } from '@/lib/api';
 import { ProjectForm } from '../components/projects/ProjectForm';
 import { useAuth } from '../contexts/AuthContext';
@@ -68,6 +69,7 @@ export function ProjectCreatePage(): JSX.Element {
   // Update form when template is loaded
   useEffect(() => {
     if (template) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInitialData({
         ownerId: String(user?.id || ''),
         stage: template.defaultStage as ProjectStage,
@@ -88,14 +90,7 @@ export function ProjectCreatePage(): JSX.Element {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 dark:bg-gray-900">
       <div className="mx-auto max-w-3xl">
-        <div className="mb-6">
-          <button
-            onClick={handleCancel}
-            className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-          >
-            ← Back to Projects
-          </button>
-        </div>
+        <PageHeader title="Создание проекта" backTo="/projects" variant="compact" />
 
         {/* Template hint */}
         {templateId && template && (

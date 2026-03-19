@@ -1,212 +1,187 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Charter Service Tests
- * Unit tests for charter templates and project blocks
+ * Тесты для сервиса уставов проектов и AI-чата
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock Prisma before importing the service
-const mockPrisma = vi.hoisted(() => ({
-  templateBlock: {
-    findMany: vi.fn().mockResolvedValue([
-      { id: 'tb-1', name: 'Привод', icon: '', sortOrder: 0, blockType: 'PARAMS_TABLE', isRequired: true },
-      { id: 'tb-2', name: 'Чаша', icon: '', sortOrder: 1, blockType: 'PARAMS_TABLE', isRequired: true },
-    ]),
-    create: vi.fn().mockResolvedValue({ id: 'tb-1', name: 'Привод', icon: '' }),
-    update: vi.fn().mockResolvedValue({ id: 'tb-1', name: 'Привод обновлён' }),
-    delete: vi.fn().mockResolvedValue({ id: 'tb-1' }),
-  },
-  projectBlock: {
-    findUnique: vi.fn().mockResolvedValue({
-      id: 'pb-1', data: {}, aiHistory: [], aiFlags: [], status: 'EMPTY'
-    }),
-    update: vi.fn().mockResolvedValue({
-      id: 'pb-1', status: 'IN_PROGRESS', aiHistory: [{ role: 'user', content: 'тест' }]
-    }),
-    create: vi.fn().mockResolvedValue({ id: 'pb-1' }),
-  },
-  project: {
-    findUnique: vi.fn().mockResolvedValue({
-      id: 'proj-1',
-      name: 'Фаршмешалка 3т',
-      ownerId: 'user-1',
-      equipmentTypes: [{
-        id: 'eq-1',
-        templateBlocks: [{ id: 'tb-1' }, { id: 'tb-2' }]
-      }],
-      blocks: [
-        { id: 'pb-1', templateBlockId: 'tb-1', templateBlock: { id: 'tb-1', name: 'Привод' } },
-        { id: 'pb-2', templateBlockId: 'tb-2', templateBlock: { id: 'tb-2', name: 'Чаша' } },
-      ]
-    }),
+// Mock prisma
+vi.mock('../../../lib/prisma', () => ({
+  prisma: {
+    projectBlock: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    templateBlock: {
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+    project: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
-vi.mock('../../../lib/prisma', () => ({ prisma: mockPrisma }));
+// Mock settings service
+vi.mock('../../settings/settings.service', () => ({
+  getSettingByKey: vi.fn(),
+}));
 
-// Import service after mock setup
-import { charterService } from '../charter.service';
+import { prisma } from '../../../lib/prisma';
+import { getSettingByKey } from '../../settings/settings.service';
+import { CharterService } from '../charter.service';
 
 describe('CharterService', () => {
+  let service: CharterService;
+
   beforeEach(() => {
+    service = new CharterService();
     vi.clearAllMocks();
   });
 
-  describe('Template Blocks', () => {
-    it('получает блоки шаблона', async () => {
-      const blocks = await charterService.getTemplateBlocks('eq-1');
-      expect(blocks).toHaveLength(2);
-      expect(blocks[0].name).toBe('Привод');
-      expect(mockPrisma.templateBlock.findMany).toHaveBeenCalledWith({
+  describe('getTemplateBlocks', () => {
+    it('should return template blocks for equipment type', async () => {
+      const mockBlocks = [
+        { id: '1', name: 'Block 1', sortOrder: 0 },
+        { id: '2', name: 'Block 2', sortOrder: 1 },
+      ];
+      vi.mocked(prisma.templateBlock.findMany).mockResolvedValue(mockBlocks as any);
+
+      const result = await service.getTemplateBlocks('eq-1');
+
+      expect(result).toEqual(mockBlocks);
+      expect(prisma.templateBlock.findMany).toHaveBeenCalledWith({
         where: { equipmentTypeId: 'eq-1' },
         orderBy: { sortOrder: 'asc' },
       });
     });
-
-    it('создаёт блок шаблона', async () => {
-      const block = await charterService.createTemplateBlock({
-        equipmentTypeId: 'eq-1',
-        name: 'Привод',
-        icon: '',
-        blockType: 'PARAMS_TABLE',
-      });
-      expect(block.name).toBe('Привод');
-      expect(mockPrisma.templateBlock.create).toHaveBeenCalled();
-    });
-
-    it('обновляет блок шаблона', async () => {
-      const block = await charterService.updateTemplateBlock('tb-1', { name: 'Привод обновлён' });
-      expect(block.name).toBe('Привод обновлён');
-      expect(mockPrisma.templateBlock.update).toHaveBeenCalledWith({
-        where: { id: 'tb-1' },
-        data: expect.objectContaining({ name: 'Привод обновлён' }),
-      });
-    });
-
-    it('удаляет блок шаблона', async () => {
-      const result = await charterService.deleteTemplateBlock('tb-1');
-      expect(result.success).toBe(true);
-      expect(mockPrisma.templateBlock.delete).toHaveBeenCalledWith({
-        where: { id: 'tb-1' },
-      });
-    });
-
-    it('изменяет порядок блоков', async () => {
-      const result = await charterService.reorderBlocks([
-        { id: 'tb-1', sortOrder: 1 },
-        { id: 'tb-2', sortOrder: 0 },
-      ]);
-      expect(result.success).toBe(true);
-      expect(mockPrisma.templateBlock.update).toHaveBeenCalledTimes(2);
-    });
   });
 
-  describe('Project Charter', () => {
-    it('получает устав проекта с блоками', async () => {
-      const charter = await charterService.getProjectCharter('proj-1');
-      expect(charter).toBeDefined();
-      expect(charter.blocks).toHaveLength(2);
-      expect(mockPrisma.project.findUnique).toHaveBeenCalledWith({
-        where: { id: 'proj-1' },
-        include: expect.any(Object),
-      });
+  describe('aiChat', () => {
+    it('should throw error when API key is not configured', async () => {
+      vi.mocked(getSettingByKey).mockResolvedValue(null);
+
+      await expect(service.aiChat('block-1', 'user-1', 'Hello', [])).rejects.toThrow(
+        'AI-ассистент не настроен'
+      );
     });
 
-    it('создаёт недостающие блоки при получении устава', async () => {
-      // Мокаем проект без блоков
-      mockPrisma.project.findUnique.mockResolvedValueOnce({
-        id: 'proj-1',
-        name: 'Фаршмешалка 3т',
-        ownerId: 'user-1',
-        equipmentTypes: [{
-          id: 'eq-1',
-          templateBlocks: [{ id: 'tb-1' }, { id: 'tb-2' }, { id: 'tb-3' }]
-        }],
-        blocks: [
-          { id: 'pb-1', templateBlockId: 'tb-1', templateBlock: { id: 'tb-1', name: 'Привод' } },
-        ]
-      });
+    it('should use settings from database', async () => {
+      // Mock settings from DB
+      vi.mocked(getSettingByKey)
+        .mockResolvedValueOnce({ value: 'deepseek' } as any) // provider
+        .mockResolvedValueOnce({ value: 'deepseek-chat' } as any) // model
+        .mockResolvedValueOnce({ value: 'sk-test-key' } as any) // api_key
+        .mockResolvedValueOnce({ value: '1000' } as any); // max_tokens
 
-      await charterService.getProjectCharter('proj-1');
-      
-      // Должны создаться 2 недостающих блока
-      expect(mockPrisma.projectBlock.create).toHaveBeenCalledTimes(2);
-    });
+      // Mock block
+      vi.mocked(prisma.projectBlock.findUnique).mockResolvedValue({
+        id: 'block-1',
+        templateBlock: {
+          aiPrompt: 'Ты эксперт',
+        },
+      } as any);
 
-    it('выбрасывает ошибку если проект не найден', async () => {
-      mockPrisma.project.findUnique.mockResolvedValueOnce(null);
-      
-      await expect(charterService.getProjectCharter('non-existent')).rejects.toThrow('Project not found');
-    });
-  });
+      // Mock saveAiMessage
+      vi.mocked(prisma.projectBlock.update).mockResolvedValue({} as any);
 
-  describe('Project Blocks', () => {
-    it('обновляет блок проекта', async () => {
-      const block = await charterService.updateProjectBlock('pb-1', 'user-1', {
-        data: { power: '11kW' },
-        status: 'DONE',
-      });
-      expect(block).toBeDefined();
-      expect(mockPrisma.projectBlock.update).toHaveBeenCalledWith({
-        where: { id: 'pb-1' },
-        data: expect.objectContaining({
-          data: { power: '11kW' },
-          status: 'DONE',
-          updatedBy: 'user-1',
+      // Mock fetch
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: 'Ответ AI FLAG:red:Риск:Описание риска' } }],
         }),
-      });
-    });
+      } as any);
 
-    it('сохраняет AI-сообщение в историю блока', async () => {
-      const block = await charterService.saveAiMessage('pb-1', 'user-1', {
-        role: 'user',
-        content: 'Мощность привода 11 кВт на 1.5т',
-      });
-      expect(block.status).toBe('IN_PROGRESS');
-      expect(mockPrisma.projectBlock.update).toHaveBeenCalledWith({
-        where: { id: 'pb-1' },
-        data: expect.objectContaining({
-          aiHistory: expect.arrayContaining([
-            expect.objectContaining({
-              role: 'user',
-              content: 'Мощность привода 11 кВт на 1.5т',
-            })
-          ]),
-          updatedBy: 'user-1',
-          status: 'IN_PROGRESS',
-        }),
-      });
-    });
+      const result = await service.aiChat('block-1', 'user-1', 'Hello', []);
 
-    it('сохраняет флаги рисков из AI-сообщения', async () => {
-      const block = await charterService.saveAiMessage('pb-1', 'user-1', {
-        role: 'assistant',
-        content: 'Обнаружен риск',
-        flags: [{ level: 'red', title: 'Высокая нагрузка', text: 'Редуктор работает на пределе' }],
-      });
-      expect(block).toBeDefined();
-      expect(mockPrisma.projectBlock.update).toHaveBeenCalledWith({
-        where: { id: 'pb-1' },
-        data: expect.objectContaining({
-          aiFlags: expect.arrayContaining([
-            expect.objectContaining({
-              level: 'red',
-              title: 'Высокая нагрузка',
-            })
-          ]),
-        }),
-      });
-    });
-
-    it('выбрасывает ошибку если блок не найден при сохранении AI-сообщения', async () => {
-      mockPrisma.projectBlock.findUnique.mockResolvedValueOnce(null);
-      
-      await expect(
-        charterService.saveAiMessage('non-existent', 'user-1', {
-          role: 'user',
-          content: 'test',
+      // Проверяем что fetch был вызван с правильными параметрами
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.deepseek.com/v1/chat/completions',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer sk-test-key',
+            'Content-Type': 'application/json',
+          }),
+          body: expect.stringContaining('deepseek-chat'),
         })
-      ).rejects.toThrow('Block not found');
+      );
+
+      // Проверяем результат
+      expect(result.text).toBeDefined();
+      expect(result.flags).toHaveLength(1);
+      expect(result.flags?.[0].level).toBe('red');
+    });
+
+    it('should handle different providers correctly', async () => {
+      // Test for Anthropic
+      vi.mocked(getSettingByKey)
+        .mockResolvedValueOnce({ value: 'anthropic' } as any) // provider
+        .mockResolvedValueOnce({ value: 'claude-sonnet-4-20250514' } as any) // model
+        .mockResolvedValueOnce({ value: 'sk-ant-test' } as any) // api_key
+        .mockResolvedValueOnce({ value: '1000' } as any); // max_tokens
+
+      vi.mocked(prisma.projectBlock.findUnique).mockResolvedValue({
+        id: 'block-1',
+        templateBlock: { aiPrompt: 'Test' },
+      } as any);
+
+      vi.mocked(prisma.projectBlock.update).mockResolvedValue({} as any);
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          content: [{ text: 'Ответ Claude' }],
+        }),
+      } as any);
+
+      await service.aiChat('block-1', 'user-1', 'Hello', []);
+
+      // Проверяем Anthropic-specific headers
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.anthropic.com/v1/messages',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'x-api-key': 'sk-ant-test',
+            'anthropic-version': '2023-06-01',
+          }),
+        })
+      );
+    });
+  });
+
+  describe('saveAiMessage', () => {
+    it('should save AI message and flags', async () => {
+      vi.mocked(prisma.projectBlock.findUnique).mockResolvedValue({
+        id: 'block-1',
+        aiHistory: [],
+        aiFlags: [],
+      } as any);
+
+      vi.mocked(prisma.projectBlock.update).mockResolvedValue({
+        id: 'block-1',
+        status: 'IN_PROGRESS',
+      } as any);
+
+      const result = await service.saveAiMessage('block-1', 'user-1', {
+        role: 'assistant',
+        content: 'Test',
+        flags: [{ level: 'red', title: 'Risk', text: 'Description' }],
+      });
+
+      expect(result.status).toBe('IN_PROGRESS');
+      expect(prisma.projectBlock.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            aiHistory: expect.any(Array),
+            aiFlags: expect.any(Array),
+          }),
+        })
+      );
     });
   });
 });

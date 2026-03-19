@@ -1,7 +1,9 @@
 import { Header } from '@/components/layout/Header';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { api } from '@/lib/api';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -173,21 +175,60 @@ export function AdminPage() {
 
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Заголовок */}
-        <div className="mb-8 flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              🛡️ Панель администратора
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
-              Управление пользователями и системой
+        <PageHeader
+          title="🛡️ Панель администратора"
+          subtitle="Управление пользователями, системными настройками и шаблонами"
+          hideBack
+        />
+
+        {/* Карточки разделов */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Link
+            to="/admin/templates"
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-lg transition-all group"
+          >
+            <div className="text-3xl mb-3">📝</div>
+            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400">
+              Редактор шаблонов
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Блоки уставов, AI-промпты, порядок блоков
+            </p>
+          </Link>
+
+          <Link
+            to="/admin/settings"
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all group"
+          >
+            <div className="text-3xl mb-3">⚙️</div>
+            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+              Настройки AI
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Провайдер, модель, API ключ (зашифрован)
+            </p>
+          </Link>
+
+          <Link
+            to="/knowledge-base"
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 hover:shadow-lg transition-all group"
+          >
+            <div className="text-3xl mb-3">📚</div>
+            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400">
+              База знаний
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Оборудование, рынки, конкуренты
+            </p>
+          </Link>
+
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+            <div className="text-3xl mb-3">🛡️</div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Пользователи</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Управление доступом (ниже на странице)
             </p>
           </div>
-          <a
-            href="/admin/settings"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-lg"
-          >
-            ⚙️ Настройки системы
-          </a>
         </div>
 
         {/* Статистика */}

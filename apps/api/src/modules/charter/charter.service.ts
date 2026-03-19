@@ -7,6 +7,7 @@ import type { Prisma, Project, TemplateBlock, ProjectBlock, $Enums } from '@pris
 
 import { prisma } from '../../lib/prisma';
 import { logger } from '../../utils/logger';
+import { getSettingByKey } from '../settings/settings.service';
 
 // Extended types for includes
 type ProjectWithCharter = Project & {
@@ -178,10 +179,7 @@ export class CharterService {
       );
 
       if (missingBlocks.length > 0) {
-        logger.debug(
-          { count: missingBlocks.length },
-          'Creating missing project blocks'
-        );
+        logger.debug({ count: missingBlocks.length }, 'Creating missing project blocks');
 
         await Promise.all(
           missingBlocks.map((tb: TemplateBlock) =>
@@ -275,6 +273,143 @@ export class CharterService {
 
     logger.info({ blockId }, 'AI message saved');
     return updated;
+  }
+
+  /**
+   * AI Chat через backend (ключ из БД, не из .env)
+   */
+  async aiChat(
+    blockId: string,
+    userId: string,
+    message: string,
+    history: Array<{ role: 'user' | 'assistant'; content: string }>,
+    blockContext?: Record<string, unknown>
+  ): Promise<{
+    text: string;
+    flags?: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
+  }> {
+    logger.debug({ blockId }, 'AI chat started');
+
+    // Получить конфиг AI из БД (не из .env!)
+    const provider = (await getSettingByKey('ai.provider'))?.value || 'deepseek';
+    const model =
+      (await getSettingByKey('ai.model'))?.value ||
+      (await getSettingByKey('ai.default_model'))?.value ||
+      'deepseek-chat';
+    const apiKey =
+      (await getSettingByKey('ai.api_key'))?.value ||
+      (await getSettingByKey(`ai.${provider}.api_key`))?.value;
+    const maxTokens = parseInt((await getSettingByKey('ai.max_tokens'))?.value || '1000');
+
+    if (!apiKey) {
+      throw new Error(
+        'AI-ассистент не настроен. Администратор должен добавить API ключ в /admin/settings'
+      );
+    }
+
+    // Получить блок с промптом
+    const block = await prisma.projectBlock.findUnique({
+      where: { id: blockId },
+      include: { templateBlock: true },
+    });
+
+    if (!block) {
+      throw new Error('Блок не найден');
+    }
+
+    const systemPrompt =
+      block.templateBlock?.aiPrompt ||
+      'Ты AI-ассистент для R&D проектов FELETI. Помогай инженеру заполнять устав. Отвечай на русском.';
+
+    // API URLs для разных провайдеров
+    const apiUrls: Record<string, string> = {
+      anthropic: 'https://api.anthropic.com/v1/messages',
+      openai: 'https://api.openai.com/v1/chat/completions',
+      deepseek: 'https://api.deepseek.com/v1/chat/completions',
+      kimi: 'https://api.moonshot.cn/v1/chat/completions',
+    };
+
+    const apiUrl = apiUrls[provider] || apiUrls['deepseek'];
+    if (!apiUrl) {
+      throw new Error(`Неизвестный провайдер AI: ${provider}`);
+    }
+
+    // Формируем запрос в зависимости от провайдера
+    let requestBody: Record<string, unknown>;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    const messages = [...history, { role: 'user', content: message }];
+
+    const contextStr = blockContext ? JSON.stringify(blockContext, null, 2) : '{}';
+    const fullSystemPrompt = `${systemPrompt}\n\nКонтекст блока:\n${contextStr}\n\nИспользуй флаги для рисков: FLAG:red:Заголовок:Описание или FLAG:yellow:... или FLAG:green:...`;
+
+    if (provider === 'anthropic') {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      requestBody = {
+        model,
+        max_tokens: maxTokens,
+        system: fullSystemPrompt,
+        messages,
+      };
+    } else {
+      // OpenAI-совместимый формат (OpenAI, DeepSeek, Kimi)
+      headers['Authorization'] = `Bearer ${apiKey}`;
+      requestBody = {
+        model,
+        max_tokens: maxTokens,
+        messages: [{ role: 'system', content: fullSystemPrompt }, ...messages],
+      };
+    }
+
+    // Отправляем запрос к AI API
+    const response = await fetch(apiUrl as string, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error({ status: response.status, error: errorText }, 'AI API error');
+      throw new Error(`AI API ошибка: ${response.status} ${errorText}`);
+    }
+
+    const aiData = (await response.json()) as Record<string, unknown>;
+
+    // Парсим ответ в зависимости от провайдера
+    let aiText = '';
+    if (provider === 'anthropic') {
+      const content = aiData['content'] as Array<{ text?: string }> | undefined;
+      aiText = content && content[0]?.text ? content[0].text : '';
+    } else {
+      const choices = aiData['choices'] as Array<{ message?: { content?: string } }> | undefined;
+      aiText = choices && choices[0]?.message?.content ? choices[0].message.content : '';
+    }
+
+    // Парсим флаги рисков
+    const flagRegex = /FLAG:(red|yellow|green):([^:]+):(.+?)(?=FLAG:|$)/g;
+    const flags: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }> = [];
+    let match;
+    while ((match = flagRegex.exec(aiText)) !== null) {
+      if (match[1] && match[2] && match[3]) {
+        flags.push({
+          level: match[1] as 'red' | 'yellow' | 'green',
+          title: match[2].trim(),
+          text: match[3].trim(),
+        });
+      }
+    }
+    const cleanText = aiText.replace(flagRegex, '').trim();
+
+    // Сохранить в историю
+    await this.saveAiMessage(blockId, userId, { role: 'user', content: message });
+    await this.saveAiMessage(blockId, userId, { role: 'assistant', content: cleanText, flags });
+
+    logger.info({ blockId, flags: flags.length }, 'AI chat completed');
+    return { text: cleanText, flags };
   }
 }
 

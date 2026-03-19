@@ -4,6 +4,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import { RATE_LIMIT_AUTH_CONFIG } from '../../config/security.config';
 import { ConflictError, ValidationError } from '../../errors';
+import { prisma } from '../../lib/prisma';
 import { authenticate } from '../../middlewares/authenticate';
 
 import { loginBodySchema, LoginInput, registerBodySchema, RegisterInput } from './auth.schemas';
@@ -28,6 +29,13 @@ const userResponseSchema = {
     email: { type: 'string', format: 'email' },
     username: { type: 'string' },
     fullName: { type: 'string' },
+    role: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        name: { type: 'string' },
+      },
+    },
   },
   required: ['id', 'email', 'username', 'fullName'],
 };
@@ -205,7 +213,20 @@ export function authRoutes(fastify: FastifyInstance): void {
       },
     },
     async (request, reply) => {
-      return reply.send(request.user);
+      // Получаем полные данные пользователя с ролью
+      const userId = (request.user as { userId: string }).userId;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          fullName: true,
+          role: { select: { id: true, name: true } },
+          createdAt: true,
+        },
+      });
+      return reply.send(user);
     }
   );
 

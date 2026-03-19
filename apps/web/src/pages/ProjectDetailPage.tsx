@@ -7,6 +7,7 @@ import { type UseMutationResult } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { FileUpload } from '../components/attachments/FileUpload';
 import { FilesList } from '../components/attachments/FilesList';
 import { CommentSection } from '../components/comments/CommentSection';
@@ -134,26 +135,16 @@ export function ProjectDetailPage(): JSX.Element {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => {
-              void navigate('/projects');
-            }}
-            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
-          >
-            ← Back to Projects
-          </button>
-        </div>
+        <PageHeader
+          title={project.name}
+          subtitle={`Код: ${project.code}`}
+          backTo="/projects"
+          variant="compact"
+        />
 
         {/* Project Card */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sm:p-8 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{project.name}</h1>
-              <p className="text-lg text-gray-500 dark:text-gray-400 font-mono mt-1">
-                {project.code}
-              </p>
-            </div>
             <div className="flex gap-2 mt-4 sm:mt-0">
               <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                 {(ru.stages as Record<string, string>)[project.stage] || project.stage}

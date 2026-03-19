@@ -5,10 +5,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { AiBlockAssistant } from '@/components/AiBlockAssistant';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { api } from '@/lib/api';
 
 // Types
@@ -186,7 +187,6 @@ function BlockDataView({ data }: { data: Record<string, unknown> }) {
     sealMaterial: 'Материал уплотнения',
     SEALMATERIAL: 'Материал уплотнения',
     // Блок 6 - Комплектации
-    loadKg: 'Загрузка, кг',
     vfd: 'Частотник',
     reducer: 'Редуктор',
     coupling: 'Муфта',
@@ -291,14 +291,6 @@ export function ProjectCharterPage(): JSX.Element {
     ).length || 0;
   const progress = totalBlocks > 0 ? Math.round((doneBlocks / totalBlocks) * 100) : 0;
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleSaveBlockData = (blockId: string, data: Record<string, unknown>) => {
-    updateBlockMutation.mutate({
-      blockId,
-      data: { data, status: 'DONE' },
-    });
-  };
-
   const handleAiSave = (blockId: string) => {
     return (message: { role: 'user' | 'assistant'; content: string; flags?: unknown[] }) => {
       saveAiMessageMutation.mutate({ blockId, message });
@@ -325,43 +317,28 @@ export function ProjectCharterPage(): JSX.Element {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-2">
-            <Link to="/projects" className="hover:text-blue-600">
-              Проекты
-            </Link>
-            <span>/</span>
-            <Link to={`/projects/${projectId}`} className="hover:text-blue-600">
-              {charter.name}
-            </Link>
-            <span>/</span>
-            <span>Устав</span>
-          </div>
+        <PageHeader
+          title="📋 Устав проекта"
+          subtitle={`${charter.code} • ${charter.name}`}
+          backTo={`/projects/${projectId}`}
+        />
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">📋 Устав проекта</h1>
-              <p className="mt-1 text-gray-600 dark:text-gray-400">
-                {charter.code} • {charter.name}
-              </p>
+        {/* Progress */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700">
+            <div className="text-sm">
+              <span className="text-gray-500 dark:text-gray-400">Прогресс:</span>
+              <span className="ml-1 font-semibold text-gray-900 dark:text-white">
+                {doneBlocks}/{totalBlocks}
+              </span>
             </div>
-
-            {/* Progress */}
-            <div className="flex items-center gap-4 bg-white dark:bg-gray-800 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700">
-              <div className="text-sm">
-                <span className="text-gray-500 dark:text-gray-400">Прогресс:</span>
-                <span className="ml-1 font-semibold text-gray-900 dark:text-white">
-                  {doneBlocks}/{totalBlocks}
-                </span>
-              </div>
-              <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <span className="text-sm font-medium text-gray-900 dark:text-white">{progress}%</span>
+            <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
             </div>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">{progress}%</span>
           </div>
         </div>
 
@@ -495,6 +472,7 @@ export function ProjectCharterPage(): JSX.Element {
         <AiBlockAssistant
           blockId={aiAssistantBlock.id}
           blockName={aiAssistantBlock.templateBlock.name}
+          projectId={projectId!}
           aiPrompt={aiAssistantBlock.templateBlock.aiPrompt || ''}
           projectContext={JSON.stringify(
             {
@@ -505,6 +483,7 @@ export function ProjectCharterPage(): JSX.Element {
             null,
             2
           )}
+          blockData={aiAssistantBlock.data || {}}
           history={aiAssistantBlock.aiHistory || []}
           onSave={handleAiSave(aiAssistantBlock.id)}
           onClose={() => setAiAssistantBlock(null)}

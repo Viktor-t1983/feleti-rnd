@@ -8,6 +8,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { api } from '@/lib/api';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 // Types
 interface EquipmentType {
@@ -172,14 +173,11 @@ export function TemplateEditorPage(): JSX.Element {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            📝 Редактор шаблонов уставов
-          </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Создавайте и редактируйте шаблоны блоков для различных типов оборудования
-          </p>
-        </div>
+        <PageHeader
+          title="📝 Редактор шаблонов уставов"
+          subtitle="Создавайте и редактируйте шаблоны блоков для различных типов оборудования"
+          backTo="/admin"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left sidebar - Equipment types */}
@@ -383,7 +381,7 @@ export function TemplateEditorPage(): JSX.Element {
                     <div className="p-8 text-center text-gray-500">Загрузка...</div>
                   ) : blocks?.length === 0 ? (
                     <div className="p-8 text-center text-gray-500">
-                      Нет блоков. Нажмите "Добавить блок" чтобы создать.
+                      Нет блоков. Нажмите &quot;Добавить блок&quot; чтобы создать.
                     </div>
                   ) : (
                     blocks?.map((block, index) => (

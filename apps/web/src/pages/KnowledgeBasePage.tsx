@@ -8,6 +8,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { api } from '@/lib/api';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 // ==========================================
 // TYPES
@@ -246,29 +247,29 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Оборудование"
-          value={summary.equipment.total}
-          subtitle={`${summary.equipment.active} активных`}
+          value={summary.equipment?.total ?? 0}
+          subtitle={`${summary.equipment?.active ?? 0} активных`}
           icon="🔧"
           color="bg-blue-100 text-blue-600"
         />
         <StatCard
           title="Рынки"
-          value={summary.markets.total}
-          subtitle={`${summary.markets.active} активных`}
+          value={summary.markets?.total ?? 0}
+          subtitle={`${summary.markets?.active ?? 0} активных`}
           icon="🌍"
           color="bg-green-100 text-green-600"
         />
         <StatCard
           title="Конкуренты"
-          value={summary.competitors.total}
-          subtitle={`${summary.competitors.active} активных`}
+          value={summary.competitors?.total ?? 0}
+          subtitle={`${summary.competitors?.active ?? 0} активных`}
           icon="🏢"
           color="bg-orange-100 text-orange-600"
         />
         <StatCard
           title="Расчёты"
-          value={summary.calculationsLibrary.total}
-          subtitle={`${summary.calculationsLibrary.active} активных`}
+          value={summary.calculationsLibrary?.total ?? 0}
+          subtitle={`${summary.calculationsLibrary?.active ?? 0} активных`}
           icon="🧮"
           color="bg-purple-100 text-purple-600"
         />
@@ -281,7 +282,7 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
             Оборудование по категориям
           </h3>
           <div className="space-y-3">
-            {Object.entries(summary.equipment.byCategory).map(([category, count]) => (
+            {Object.entries(summary.equipment?.byCategory ?? {}).map(([category, count]) => (
               <div key={category} className="flex items-center justify-between">
                 <span className="text-gray-600 dark:text-gray-400">
                   {getCategoryLabel(category)}
@@ -291,7 +292,7 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
                     <div
                       className="h-full bg-blue-600 rounded-full"
                       style={{
-                        width: `${(count / summary.equipment.total) * 100}%`,
+                        width: `${(count / (summary.equipment?.total || 1)) * 100}%`,
                       }}
                     />
                   </div>
@@ -310,7 +311,7 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
             Рынки по регионам
           </h3>
           <div className="space-y-3">
-            {Object.entries(summary.markets.byRegion).map(([region, count]) => (
+            {Object.entries(summary.markets?.byRegion ?? {}).map(([region, count]) => (
               <div key={region} className="flex items-center justify-between">
                 <span className="text-gray-600 dark:text-gray-400">{getRegionLabel(region)}</span>
                 <div className="flex items-center gap-3">
@@ -318,7 +319,7 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
                     <div
                       className="h-full bg-green-600 rounded-full"
                       style={{
-                        width: `${(count / summary.markets.total) * 100}%`,
+                        width: `${(count / (summary.markets?.total || 1)) * 100}%`,
                       }}
                     />
                   </div>
@@ -337,7 +338,7 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
             Конкуренты по уровню угрозы
           </h3>
           <div className="space-y-3">
-            {Object.entries(summary.competitors.byThreatLevel).map(([level, count]) => (
+            {Object.entries(summary.competitors?.byThreatLevel ?? {}).map(([level, count]) => (
               <div key={level} className="flex items-center justify-between">
                 <span className="text-gray-600 dark:text-gray-400">
                   {getThreatLevelLabel(level)}
@@ -353,7 +354,7 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
                             : 'bg-green-600'
                       }`}
                       style={{
-                        width: `${(count / summary.competitors.total) * 100}%`,
+                        width: `${(count / (summary.competitors?.total || 1)) * 100}%`,
                       }}
                     />
                   </div>
@@ -372,26 +373,28 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
             Расчёты по категориям
           </h3>
           <div className="space-y-3">
-            {Object.entries(summary.calculationsLibrary.byCategory).map(([category, count]) => (
-              <div key={category} className="flex items-center justify-between">
-                <span className="text-gray-600 dark:text-gray-400">
-                  {getCategoryLabel(category)}
-                </span>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-purple-600 rounded-full"
-                      style={{
-                        width: `${(count / summary.calculationsLibrary.total) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
-                    {count}
+            {Object.entries(summary.calculationsLibrary?.byCategory ?? {}).map(
+              ([category, count]) => (
+                <div key={category} className="flex items-center justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {getCategoryLabel(category)}
                   </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-purple-600 rounded-full"
+                        style={{
+                          width: `${(count / (summary.calculationsLibrary?.total || 1)) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white w-8">
+                      {count}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         </div>
       </div>
@@ -752,14 +755,10 @@ export function KnowledgeBasePage(): JSX.Element {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">📚 База знаний</h1>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Каталог оборудования, рынки сбыта, конкуренты и библиотека инженерных расчётов
-              </p>
-            </div>
+        <PageHeader
+          title="📚 База знаний"
+          subtitle="Каталог оборудования, рынки сбыта, конкуренты и библиотека инженерных расчётов"
+          actions={
             <button
               onClick={refreshData}
               className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -774,8 +773,8 @@ export function KnowledgeBasePage(): JSX.Element {
               </svg>
               Обновить
             </button>
-          </div>
-        </div>
+          }
+        />
 
         {/* Tabs */}
         <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
