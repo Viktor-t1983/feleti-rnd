@@ -13,8 +13,10 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
   // ==========================================
 
   // GET /api/knowledge/summary - общая статистика базы знаний
-  fastify.get('/knowledge/summary', { preHandler: [fastify.authenticate] }, async () => {
-    return knowledgeBaseService.getSummary();
+  fastify.get('/knowledge/summary', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const result = await knowledgeBaseService.getSummary();
+    request.log.info({ result }, 'Knowledge summary response');
+    return result;
   });
 
   // ==========================================

@@ -3,12 +3,14 @@
  * База знаний: Каталог оборудования, Рынки, Конкуренты, Библиотека расчётов
  */
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { EquipmentModal } from '@/components/knowledge-base/EquipmentModal';
 
 // ==========================================
 // TYPES
@@ -94,7 +96,7 @@ type TabType = 'overview' | 'equipment' | 'markets' | 'competitors' | 'calculati
 // ==========================================
 
 const fetchSummary = async (): Promise<KnowledgeBaseSummary> => {
-  const { data } = await api.get('/knowledge/summary');
+  const { data } = await api.get('/api/knowledge/summary');
   return data;
 };
 
@@ -102,22 +104,22 @@ const fetchEquipment = async (params?: {
   category?: string;
   search?: string;
 }): Promise<{ items: EquipmentItem[]; total: number }> => {
-  const { data } = await api.get('/knowledge/equipment', { params });
+  const { data } = await api.get('/api/knowledge/equipment', { params });
   return data;
 };
 
 const fetchMarkets = async (): Promise<{ items: MarketItem[]; total: number }> => {
-  const { data } = await api.get('/knowledge/markets');
+  const { data } = await api.get('/api/knowledge/markets');
   return data;
 };
 
 const fetchCompetitors = async (): Promise<{ items: CompetitorItem[]; total: number }> => {
-  const { data } = await api.get('/knowledge/competitors');
+  const { data } = await api.get('/api/knowledge/competitors');
   return data;
 };
 
 const fetchCalculations = async (): Promise<{ items: CalculationItem[]; total: number }> => {
-  const { data } = await api.get('/knowledge/calculations');
+  const { data } = await api.get('/api/knowledge/calculations');
   return data;
 };
 
@@ -406,83 +408,175 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
 // EQUIPMENT TAB
 // ==========================================
 
+
+
 const EquipmentTab = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['knowledge', 'equipment'],
     queryFn: () => fetchEquipment(),
+    refetchOnMount: 'always',
+    staleTime: 0,
+    retry: 3,
   });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleAdd = () => {
+    setModalMode('create');
+    setSelectedEquipment(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (item: EquipmentItem) => {
+    setModalMode('edit');
+    setSelectedEquipment(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedEquipment(null);
+  };
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/knowledge/equipment/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge', 'equipment'] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge', 'summary'] });
+      setDeleteConfirmId(null);
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    if (deleteConfirmId === id) {
+      deleteMutation.mutate(id);
+    } else {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId(null), 3000);
+    }
+  };
 
   if (isLoading) {
     return <div className="text-center py-8">Загрузка...</div>;
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Каталог оборудования
-        </h3>
-        <span className="text-sm text-gray-500 dark:text-gray-400">Всего: {data?.total || 0}</span>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Код
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Название
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Категория
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Цена
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Срок
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Статус
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {data?.items.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                  {item.code}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{item.name}</td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {getCategoryLabel(item.category)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  {formatCurrency(item.basePrice, item.currency)}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  {item.leadTimeDays ? `${item.leadTimeDays} дн.` : '-'}
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  {item.isActive ? (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Активно
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      Неактивно
-                    </span>
-                  )}
-                </td>
+    <>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Каталог оборудования
+            </h3>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Всего: {data?.total || 0}</span>
+          </div>
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Добавить оборудование
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Код
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Название
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Категория
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Цена
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Срок
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Статус
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Действия
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {data?.items?.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                    {item.code}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{item.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {getCategoryLabel(item.category)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                    {formatCurrency(item.basePrice, item.currency)}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                    {item.leadTimeDays ? `${item.leadTimeDays} дн.` : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.isActive ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Активно
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        Неактивно
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
+                        title="Редактировать"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deleteMutation.isPending}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          deleteConfirmId === item.id
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30'
+                            : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600'
+                        }`}
+                        title={deleteConfirmId === item.id ? 'Нажмите еще раз для подтверждения' : 'Удалить'}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+
+      <EquipmentModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        equipment={selectedEquipment}
+        mode={modalMode}
+      />
+    </>
   );
 };
 
@@ -494,6 +588,8 @@ const MarketsTab = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['knowledge', 'markets'],
     queryFn: fetchMarkets,
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 
   if (isLoading) {
@@ -531,7 +627,7 @@ const MarketsTab = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {data?.items.map((item) => (
+            {data?.items?.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                   {item.code}
@@ -568,6 +664,8 @@ const CompetitorsTab = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['knowledge', 'competitors'],
     queryFn: fetchCompetitors,
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 
   if (isLoading) {
@@ -605,7 +703,7 @@ const CompetitorsTab = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {data?.items.map((item) => (
+            {data?.items?.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                   {item.name}
@@ -663,6 +761,8 @@ const CalculationsTab = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['knowledge', 'calculations'],
     queryFn: fetchCalculations,
+    refetchOnMount: 'always',
+    staleTime: 0,
   });
 
   if (isLoading) {
@@ -697,7 +797,7 @@ const CalculationsTab = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {data?.items.map((item) => (
+            {data?.items?.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td className="px-4 py-3 text-sm font-mono text-gray-900 dark:text-white">
                   {item.code}
