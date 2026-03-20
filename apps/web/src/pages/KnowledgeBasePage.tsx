@@ -634,7 +634,7 @@ const FLAG_MAP: Record<string, string> = {
   MD: '🇲🇩',
 };
 
-const getFlag = (code: string) => FLAG_MAP[code] || '🏳️';
+const getFlag = (code: string) => FLAG_MAP[code.toUpperCase()] || '🏳️';
 
 const getPriorityBadge = (priority: number) => {
   if (priority >= 70) {
