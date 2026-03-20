@@ -72,6 +72,7 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
 
   useEffect(() => {
     if (equipment && mode === 'edit') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         code: equipment.code,
         name: equipment.name,
@@ -169,9 +170,9 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
   };
 
   const handleChange = (field: keyof FormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -204,14 +205,17 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
           <div className="grid grid-cols-2 gap-4">
             {/* Code */}
             <div className="space-y-2">
-              <label htmlFor="code" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="code"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Код <span className="text-red-500">*</span>
               </label>
               <input
                 id="code"
                 type="text"
                 value={formData.code}
-                onChange={e => handleChange('code', e.target.value)}
+                onChange={(e) => handleChange('code', e.target.value)}
                 disabled={mode === 'edit'}
                 className={inputClass('code')}
                 placeholder="EQ-001"
@@ -221,16 +225,19 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
 
             {/* Category */}
             <div className="space-y-2">
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="category"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Категория <span className="text-red-500">*</span>
               </label>
               <select
                 id="category"
                 value={formData.category}
-                onChange={e => handleChange('category', e.target.value)}
+                onChange={(e) => handleChange('category', e.target.value)}
                 className={inputClass('category')}
               >
-                {categories.map(cat => (
+                {categories.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
                   </option>
@@ -241,14 +248,17 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
 
             {/* Name */}
             <div className="col-span-2 space-y-2">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Название <span className="text-red-500">*</span>
               </label>
               <input
                 id="name"
                 type="text"
                 value={formData.name}
-                onChange={e => handleChange('name', e.target.value)}
+                onChange={(e) => handleChange('name', e.target.value)}
                 className={inputClass('name')}
                 placeholder="Введите название оборудования"
               />
@@ -257,14 +267,17 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
 
             {/* Short Name */}
             <div className="col-span-2 space-y-2">
-              <label htmlFor="shortName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="shortName"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Короткое название
               </label>
               <input
                 id="shortName"
                 type="text"
                 value={formData.shortName}
-                onChange={e => handleChange('shortName', e.target.value)}
+                onChange={(e) => handleChange('shortName', e.target.value)}
                 className={inputClass('shortName')}
                 placeholder="Краткое наименование"
               />
@@ -272,14 +285,17 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
 
             {/* Manufacturer */}
             <div className="col-span-2 space-y-2">
-              <label htmlFor="manufacturer" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="manufacturer"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Производитель
               </label>
               <input
                 id="manufacturer"
                 type="text"
                 value={formData.manufacturer}
-                onChange={e => handleChange('manufacturer', e.target.value)}
+                onChange={(e) => handleChange('manufacturer', e.target.value)}
                 className={inputClass('manufacturer')}
                 placeholder="Название производителя"
               />
@@ -287,7 +303,10 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
 
             {/* Base Price */}
             <div className="space-y-2">
-              <label htmlFor="basePrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="basePrice"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Базовая цена
               </label>
               <input
@@ -295,7 +314,7 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
                 type="number"
                 step="0.01"
                 value={formData.basePrice}
-                onChange={e => handleChange('basePrice', e.target.value)}
+                onChange={(e) => handleChange('basePrice', e.target.value)}
                 className={inputClass('basePrice')}
                 placeholder="0.00"
               />
@@ -304,16 +323,19 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
 
             {/* Currency */}
             <div className="space-y-2">
-              <label htmlFor="currency" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="currency"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Валюта
               </label>
               <select
                 id="currency"
                 value={formData.currency}
-                onChange={e => handleChange('currency', e.target.value)}
+                onChange={(e) => handleChange('currency', e.target.value)}
                 className={inputClass('currency')}
               >
-                {currencies.map(curr => (
+                {currencies.map((curr) => (
                   <option key={curr.value} value={curr.value}>
                     {curr.label}
                   </option>
@@ -323,18 +345,23 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
 
             {/* Lead Time */}
             <div className="space-y-2">
-              <label htmlFor="leadTimeDays" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="leadTimeDays"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Срок поставки (дней)
               </label>
               <input
                 id="leadTimeDays"
                 type="number"
                 value={formData.leadTimeDays}
-                onChange={e => handleChange('leadTimeDays', e.target.value)}
+                onChange={(e) => handleChange('leadTimeDays', e.target.value)}
                 className={inputClass('leadTimeDays')}
                 placeholder="30"
               />
-              {errors['leadTimeDays'] && <p className="text-xs text-red-500">{errors['leadTimeDays']}</p>}
+              {errors['leadTimeDays'] && (
+                <p className="text-xs text-red-500">{errors['leadTimeDays']}</p>
+              )}
             </div>
 
             {/* Is Active */}
@@ -343,10 +370,13 @@ export const EquipmentModal = ({ isOpen, onClose, equipment, mode }: EquipmentMo
                 type="checkbox"
                 id="isActive"
                 checked={formData.isActive}
-                onChange={e => handleChange('isActive', e.target.checked)}
+                onChange={(e) => handleChange('isActive', e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="isActive"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Активно
               </label>
             </div>
