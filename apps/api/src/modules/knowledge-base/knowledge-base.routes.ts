@@ -221,6 +221,14 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
       standards?: string[];
       importTaxes?: Record<string, unknown>;
       priority?: number;
+      industry?: string;
+      companiesCount?: number;
+      productionVolumeTons?: number;
+      exportVolumeTons?: number;
+      importVolumeTons?: number;
+      dataSource?: string;
+      dataYear?: number;
+      flagEmoji?: string;
     };
   }>('/knowledge/markets', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     const market = await knowledgeBaseService.createMarket({
@@ -270,6 +278,14 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
       importTaxes?: Record<string, unknown>;
       isActive?: boolean;
       priority?: number;
+      industry?: string;
+      companiesCount?: number;
+      productionVolumeTons?: number;
+      exportVolumeTons?: number;
+      importVolumeTons?: number;
+      dataSource?: string;
+      dataYear?: number;
+      flagEmoji?: string;
     };
   }>('/knowledge/markets/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
     try {

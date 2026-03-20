@@ -58,10 +58,17 @@ interface MarketItem {
   id: string;
   code: string;
   name: string;
+  flagEmoji?: string;
   region: string;
   population: number | null;
   gdpPerCapita: number | null;
   meatConsumptionKgPerCapita: number | null;
+  industry?: string;
+  companiesCount?: number | null;
+  productionVolumeTons?: number | null;
+  exportVolumeTons?: number | null;
+  importVolumeTons?: number | null;
+  dataYear?: number | null;
   isActive: boolean;
   priority: number;
   _count?: { competitors: number; equipment: number };
@@ -126,11 +133,6 @@ const fetchCalculations = async (): Promise<{ items: CalculationItem[]; total: n
 // ==========================================
 // HELPER FUNCTIONS
 // ==========================================
-
-const formatNumber = (num: number | null | undefined): string => {
-  if (num === null || num === undefined) return '-';
-  return new Intl.NumberFormat('ru-RU').format(num);
-};
 
 const formatCurrency = (num: number | null | undefined, currency: string): string => {
   if (num === null || num === undefined) return '-';
@@ -408,8 +410,6 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
 // EQUIPMENT TAB
 // ==========================================
 
-
-
 const EquipmentTab = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['knowledge', 'equipment'],
@@ -474,7 +474,9 @@ const EquipmentTab = () => {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
               Каталог оборудования
             </h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Всего: {data?.total || 0}</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Всего: {data?.total || 0}
+            </span>
           </div>
           <button
             onClick={handleAdd}
@@ -517,7 +519,9 @@ const EquipmentTab = () => {
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                     {item.code}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{item.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                    {item.name}
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {getCategoryLabel(item.category)}
@@ -557,7 +561,11 @@ const EquipmentTab = () => {
                             ? 'bg-red-100 text-red-700 dark:bg-red-900/30'
                             : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600'
                         }`}
-                        title={deleteConfirmId === item.id ? 'Нажмите еще раз для подтверждения' : 'Удалить'}
+                        title={
+                          deleteConfirmId === item.id
+                            ? 'Нажмите еще раз для подтверждения'
+                            : 'Удалить'
+                        }
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -584,6 +592,69 @@ const EquipmentTab = () => {
 // MARKETS TAB
 // ==========================================
 
+// ==========================================
+// MARKETS TAB
+// ==========================================
+
+import { MarketModal } from '@/components/knowledge-base/MarketModal';
+
+interface MarketItem {
+  id: string;
+  code: string;
+  name: string;
+  flagEmoji?: string;
+  region: string;
+  industry?: string;
+  companiesCount?: number | null;
+  productionVolumeTons?: number | null;
+  dataYear?: number | null;
+}
+
+// Карта флагов стран (для клиентской валидации)
+const FLAG_MAP: Record<string, string> = {
+  BY: '🇧🇾',
+  RU: '🇷🇺',
+  KZ: '🇰🇿',
+  UA: '🇺🇦',
+  PL: '🇵🇱',
+  DE: '🇩🇪',
+  CZ: '🇨🇿',
+  IT: '🇮🇹',
+  ES: '🇪🇸',
+  FR: '🇫🇷',
+  CN: '🇨🇳',
+  BR: '🇧🇷',
+  AR: '🇦🇷',
+  US: '🇺🇸',
+  TR: '🇹🇷',
+  UZ: '🇺🇿',
+  AZ: '🇦🇿',
+  GE: '🇬🇪',
+  AM: '🇦🇲',
+  MD: '🇲🇩',
+};
+
+const getFlag = (code: string) => FLAG_MAP[code] || '🏳️';
+
+const getPriorityBadge = (priority: number) => {
+  if (priority >= 70) {
+    return {
+      label: 'Работаем',
+      className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    };
+  } else if (priority >= 40) {
+    return {
+      label: 'Планируем',
+      className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+    };
+  } else {
+    return {
+      label: 'Мониторинг',
+      className: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400',
+    };
+  }
+};
+
 const MarketsTab = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['knowledge', 'markets'],
@@ -591,68 +662,228 @@ const MarketsTab = () => {
     refetchOnMount: 'always',
     staleTime: 0,
   });
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'planned' | 'monitoring'>(
+    'all'
+  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedMarket, setSelectedMarket] = useState<MarketItem | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const handleAdd = () => {
+    setModalMode('create');
+    setSelectedMarket(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (item: MarketItem) => {
+    setModalMode('edit');
+    setSelectedMarket(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedMarket(null);
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/api/knowledge/markets/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge', 'markets'] });
+      queryClient.invalidateQueries({ queryKey: ['knowledge', 'summary'] });
+      setDeleteConfirmId(null);
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    if (deleteConfirmId === id) {
+      deleteMutation.mutate(id);
+    } else {
+      setDeleteConfirmId(id);
+      setTimeout(() => setDeleteConfirmId(null), 3000);
+    }
+  };
+
+  // Фильтрация и сортировка
+  const filteredItems =
+    data?.items
+      ?.filter((item: MarketItem) => {
+        if (filterStatus === 'all') return true;
+        if (filterStatus === 'active') return item.priority >= 70;
+        if (filterStatus === 'planned') return item.priority >= 40 && item.priority < 70;
+        if (filterStatus === 'monitoring') return item.priority < 40;
+        return true;
+      })
+      .sort((a: MarketItem, b: MarketItem) => b.priority - a.priority) || [];
 
   if (isLoading) {
     return <div className="text-center py-8">Загрузка...</div>;
   }
 
+  const hasData = filteredItems.length > 0;
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Рынки сбыта</h3>
-        <span className="text-sm text-gray-500 dark:text-gray-400">Всего: {data?.total || 0}</span>
+    <>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Целевые рынки</h3>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Всего: {data?.total || 0}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Фильтр по статусу */}
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm text-gray-700 dark:text-gray-300"
+              >
+                <option value="all">Все статусы</option>
+                <option value="active">Работаем</option>
+                <option value="planned">Планируем</option>
+                <option value="monitoring">Мониторинг</option>
+              </select>
+              <button
+                onClick={handleAdd}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Добавить рынок
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {hasData ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Страна
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Отрасль
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Предприятий
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Объём произв., т
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Кг/чел/год
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Статус
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Год
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Действия
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredItems.map((item: MarketItem) => {
+                  const badge = getPriorityBadge(item.priority);
+                  return (
+                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                        <span className="flex items-center gap-2">
+                          <span className="text-xl">{getFlag(item.code)}</span>
+                          {item.name}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {item.industry || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {item.companiesCount?.toLocaleString() || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {item.productionVolumeTons
+                          ? `${(item.productionVolumeTons / 1000).toFixed(0)}K`
+                          : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {item.meatConsumptionKgPerCapita || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                        {item.dataYear || '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEdit(item)}
+                            className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
+                            title="Редактировать"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            disabled={deleteMutation.isPending}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              deleteConfirmId === item.id
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30'
+                                : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600'
+                            }`}
+                            title={deleteConfirmId === item.id ? 'Нажмите ещё раз' : 'Удалить'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+              <span className="text-3xl">🌍</span>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Рынков пока нет
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              Добавьте первые целевые рынки для анализа
+            </p>
+            <button
+              onClick={handleAdd}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Добавить рынок
+            </button>
+          </div>
+        )}
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Код
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Название
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Регион
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Население
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Конкуренты
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Оборудование
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {data?.items?.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                  {item.code}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">{item.name}</td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {getRegionLabel(item.region)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  {formatNumber(item.population)}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  {item._count?.competitors || 0}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  {item._count?.equipment || 0}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+
+      <MarketModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        market={selectedMarket}
+        mode={modalMode}
+      />
+    </>
   );
 };
 

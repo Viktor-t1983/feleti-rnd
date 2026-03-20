@@ -1023,6 +1023,16 @@ model Market {
   isActive        Boolean         @default(true)
   priority        Int             @default(0) // Приоритет для компании
   
+  // Отрасль и производство
+  industry        String?         // Отрасль: "Мясопереработка", "Птицепереработка"
+  companiesCount  Int?            // Количество предприятий
+  productionVolumeTons Float?     // Объём производства т/год
+  exportVolumeTons  Float?        // Экспорт т/год
+  importVolumeTons  Float?        // Импорт т/год
+  dataSource      String?         // Источник данных (belstat.gov.by)
+  dataYear        Int?            // Год данных (2023)
+  flagEmoji       String?         // Флаг страны 🇧🇾
+  
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   

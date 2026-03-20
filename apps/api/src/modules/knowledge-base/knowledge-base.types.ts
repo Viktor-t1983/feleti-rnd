@@ -90,6 +90,14 @@ export interface CreateMarketInput {
   standards?: string[];
   importTaxes?: Record<string, unknown>;
   priority?: number;
+  industry?: string;
+  companiesCount?: number;
+  productionVolumeTons?: number;
+  exportVolumeTons?: number;
+  importVolumeTons?: number;
+  dataSource?: string;
+  dataYear?: number;
+  flagEmoji?: string;
 }
 
 export interface UpdateMarketInput {
@@ -107,6 +115,14 @@ export interface UpdateMarketInput {
   importTaxes?: Record<string, unknown>;
   isActive?: boolean;
   priority?: number;
+  industry?: string;
+  companiesCount?: number;
+  productionVolumeTons?: number;
+  exportVolumeTons?: number;
+  importVolumeTons?: number;
+  dataSource?: string;
+  dataYear?: number;
+  flagEmoji?: string;
 }
 
 export interface MarketFilters {
@@ -131,6 +147,15 @@ export interface MarketListItem {
     competitors: number;
     equipment: number;
   };
+  // Новые поля
+  flagEmoji: string;
+  industry: string | null;
+  companiesCount: number | null;
+  productionVolumeTons: number | null;
+  exportVolumeTons: number | null;
+  importVolumeTons: number | null;
+  dataSource: string | null;
+  dataYear: number | null;
 }
 
 // ==========================================

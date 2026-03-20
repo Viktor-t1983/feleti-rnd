@@ -8,6 +8,30 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { logger } from '../../utils/logger';
 
+// Карта флагов стран по коду
+const FLAG_MAP: Record<string, string> = {
+  BY: '🇧🇾',
+  RU: '🇷🇺',
+  KZ: '🇰🇿',
+  UA: '🇺🇦',
+  PL: '🇵🇱',
+  DE: '🇩🇪',
+  CZ: '🇨🇿',
+  IT: '🇮🇹',
+  ES: '🇪🇸',
+  FR: '🇫🇷',
+  CN: '🇨🇳',
+  BR: '🇧🇷',
+  AR: '🇦🇷',
+  US: '🇺🇸',
+  TR: '🇹🇷',
+  UZ: '🇺🇿',
+  AZ: '🇦🇿',
+  GE: '🇬🇪',
+  AM: '🇦🇲',
+  MD: '🇲🇩',
+};
+
 import type {
   CompetitorEquipmentInput,
   CompetitorFilters,
@@ -317,6 +341,14 @@ export class KnowledgeBaseService {
         standards: data.standards,
         importTaxes: data.importTaxes as unknown as Prisma.JsonObject | undefined,
         priority: data.priority,
+        industry: data.industry,
+        companiesCount: data.companiesCount,
+        productionVolumeTons: data.productionVolumeTons,
+        exportVolumeTons: data.exportVolumeTons,
+        importVolumeTons: data.importVolumeTons,
+        dataSource: data.dataSource,
+        dataYear: data.dataYear,
+        flagEmoji: data.flagEmoji || FLAG_MAP[data.code] || '🏳️',
       },
       include: {
         _count: {
@@ -426,6 +458,14 @@ export class KnowledgeBaseService {
         importTaxes: data.importTaxes as unknown as Prisma.JsonObject | undefined,
         isActive: data.isActive,
         priority: data.priority,
+        industry: data.industry,
+        companiesCount: data.companiesCount,
+        productionVolumeTons: data.productionVolumeTons,
+        exportVolumeTons: data.exportVolumeTons,
+        importVolumeTons: data.importVolumeTons,
+        dataSource: data.dataSource,
+        dataYear: data.dataYear,
+        flagEmoji: data.flagEmoji,
       },
       include: {
         _count: {
@@ -462,7 +502,20 @@ export class KnowledgeBaseService {
       isActive: market.isActive,
       priority: market.priority,
       _count: market._count,
+      // Новые поля
+      flagEmoji: market.flagEmoji ?? this.getFlagForCode(market.code),
+      industry: market.industry,
+      companiesCount: market.companiesCount,
+      productionVolumeTons: market.productionVolumeTons,
+      exportVolumeTons: market.exportVolumeTons,
+      importVolumeTons: market.importVolumeTons,
+      dataSource: market.dataSource,
+      dataYear: market.dataYear,
     };
+  }
+
+  private getFlagForCode(code: string): string {
+    return FLAG_MAP[code] || '🏳️';
   }
 
   // ==========================================
