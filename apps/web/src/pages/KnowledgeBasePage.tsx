@@ -610,31 +610,24 @@ interface MarketItem {
   dataYear?: number | null;
 }
 
-// Карта флагов стран (для клиентской валидации)
-const FLAG_MAP: Record<string, string> = {
-  BY: '🇧🇾',
-  RU: '🇷🇺',
-  KZ: '🇰🇿',
-  UA: '🇺🇦',
-  PL: '🇵🇱',
-  DE: '🇩🇪',
-  CZ: '🇨🇿',
-  IT: '🇮🇹',
-  ES: '🇪🇸',
-  FR: '🇫🇷',
-  CN: '🇨🇳',
-  BR: '🇧🇷',
-  AR: '🇦🇷',
-  US: '🇺🇸',
-  TR: '🇹🇷',
-  UZ: '🇺🇿',
-  AZ: '🇦🇿',
-  GE: '🇬🇪',
-  AM: '🇦🇲',
-  MD: '🇲🇩',
-};
-
-const getFlag = (code: string) => FLAG_MAP[code.toUpperCase()] || '🏳️';
+// Функция для отображения флага через CDN (Windows не поддерживает эмодзи флагов)
+const getFlagImg = (code: string) => (
+  <img
+    src={`https://flagcdn.com/24x18/${code.toLowerCase()}.png`}
+    width="24"
+    height="18"
+    alt={code}
+    style={{
+      display: 'inline-block',
+      marginRight: '8px',
+      verticalAlign: 'middle',
+      borderRadius: '2px',
+    }}
+    onError={(e) => {
+      (e.target as HTMLImageElement).style.display = 'none';
+    }}
+  />
+);
 
 const getPriorityBadge = (priority: number) => {
   if (priority >= 70) {
@@ -797,8 +790,8 @@ const MarketsTab = () => {
                   return (
                     <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                        <span className="flex items-center gap-2">
-                          <span className="text-xl">{getFlag(item.code)}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {getFlagImg(item.code)}
                           {item.name}
                         </span>
                       </td>

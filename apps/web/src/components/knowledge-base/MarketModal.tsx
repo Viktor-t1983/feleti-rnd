@@ -29,28 +29,19 @@ interface MarketModalProps {
   mode: 'create' | 'edit';
 }
 
-const FLAG_MAP: Record<string, string> = {
-  BY: '🇧🇾',
-  RU: '🇷🇺',
-  KZ: '🇰🇿',
-  UA: '🇺🇦',
-  PL: '🇵🇱',
-  DE: '🇩🇪',
-  CZ: '🇨🇿',
-  IT: '🇮🇹',
-  ES: '🇪🇸',
-  FR: '🇫🇷',
-  CN: '🇨🇳',
-  BR: '🇧🇷',
-  AR: '🇦🇷',
-  US: '🇺🇸',
-  TR: '🇹🇷',
-  UZ: '🇺🇿',
-  AZ: '🇦🇿',
-  GE: '🇬🇪',
-  AM: '🇦🇲',
-  MD: '🇲🇩',
-};
+// Функция для отображения флага через CDN (Windows не поддерживает эмодзи флагов)
+const getFlagImg = (code: string) => (
+  <img
+    src={`https://flagcdn.com/24x18/${code.toLowerCase()}.png`}
+    width="24"
+    height="18"
+    alt={code}
+    style={{ display: 'inline-block', verticalAlign: 'middle', borderRadius: '2px' }}
+    onError={(e) => {
+      (e.target as HTMLImageElement).style.display = 'none';
+    }}
+  />
+);
 
 const REGIONS = [
   { value: 'EUROPE', label: 'Европа' },
@@ -116,8 +107,8 @@ export const MarketModal = ({ isOpen, onClose, market, mode }: MarketModalProps)
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Автоопределение флага по коду
-  const getFlagEmoji = (code: string) => FLAG_MAP[code.toUpperCase()] || '🏳️';
+  // Получаем код для флага
+  const flagCode = mode === 'edit' ? market?.code : formData.code;
 
   useEffect(() => {
     if (market && mode === 'edit') {
@@ -264,7 +255,6 @@ export const MarketModal = ({ isOpen, onClose, market, mode }: MarketModalProps)
   if (!isOpen) return null;
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
-  const currentFlag = mode === 'edit' ? market?.flagEmoji : getFlagEmoji(formData.code);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -300,7 +290,7 @@ export const MarketModal = ({ isOpen, onClose, market, mode }: MarketModalProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Код <span className="text-red-500">*</span>{' '}
-                {currentFlag && <span className="text-xl">{currentFlag}</span>}
+                {flagCode && <span className="ml-1">{getFlagImg(flagCode)}</span>}
               </label>
               <input
                 type="text"
