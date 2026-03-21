@@ -1053,6 +1053,10 @@ model CompetitorDetail {
   phone           String?
   address         String?         @db.Text
   
+  // Страна
+  country         String?         // Страна: "Польша", "Германия"
+  countryCode     String?         // Код страны: PL, DE, CN
+  
   // Информация о компании
   foundedYear     Int?
   employeesCount  Int?

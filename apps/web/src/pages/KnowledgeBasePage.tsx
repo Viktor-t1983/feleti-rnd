@@ -11,6 +11,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EquipmentModal } from '@/components/knowledge-base/EquipmentModal';
+import { CompetitorModal } from '@/components/knowledge-base/CompetitorModal';
 
 // ==========================================
 // TYPES
@@ -79,11 +80,21 @@ interface CompetitorItem {
   name: string;
   legalName: string | null;
   website: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  country: string | null;
+  countryCode: string | null;
   annualRevenue: number | null;
   marketShare: number | null;
   priceSegment: string;
   isActive: boolean;
   threatLevel: string;
+  strengths: string[];
+  weaknesses: string[];
+  productRange: string[];
+  foundedYear: number | null;
+  employeesCount: number | null;
   _count?: { markets: number; equipment: number };
 }
 
@@ -891,89 +902,289 @@ const CompetitorsTab = () => {
     refetchOnMount: 'always',
     staleTime: 0,
   });
+  const [filterThreat, setFilterThreat] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorItem | null>(null);
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/knowledge/competitors/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge', 'competitors'] });
+      toast.success('Конкурент удалён');
+    },
+  });
+
+  const handleAdd = () => {
+    setModalMode('create');
+    setSelectedCompetitor(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (item: CompetitorItem) => {
+    setModalMode('edit');
+    setSelectedCompetitor(item);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCompetitor(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Удалить конкурента?')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  // Фильтрация и сортировка
+  const filteredItems = data?.items
+    ?.filter((item: CompetitorItem) => {
+      if (filterThreat === 'all') return true;
+      return item.threatLevel === filterThreat;
+    })
+    .sort((a: CompetitorItem, b: CompetitorItem) => {
+      const order = { high: 0, medium: 1, low: 2 };
+      return order[a.threatLevel as keyof typeof order] - order[b.threatLevel as keyof typeof order];
+    });
 
   if (isLoading) {
     return <div className="text-center py-8">Загрузка...</div>;
   }
 
+  // Функция для отображения флага через CDN
+  const getFlagImg = (code: string | null) => {
+    if (!code) return null;
+    return (
+      <img
+        src={`https://flagcdn.com/24x18/${code.toLowerCase()}.png`}
+        width="24"
+        height="18"
+        alt={code}
+        className="inline-block rounded"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+      />
+    );
+  };
+
+  const getPriceSegmentLabel = (segment: string) => {
+    switch (segment) {
+      case 'low': return 'Эконом';
+      case 'premium': return 'Премиум';
+      default: return 'Средний';
+    }
+  };
+
+  // Пустой список
+  if (!filteredItems || filteredItems.length === 0) {
+    return (
+      <>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <select
+              value={filterThreat}
+              onChange={(e) => setFilterThreat(e.target.value as typeof filterThreat)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="all">Все уровни угрозы</option>
+              <option value="high">Высокая</option>
+              <option value="medium">Средняя</option>
+              <option value="low">Низкая</option>
+            </select>
+          </div>
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Добавить конкурента
+          </button>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            Конкурентов пока нет
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">
+            Добавьте известных игроков рынка
+          </p>
+          <button
+            onClick={handleAdd}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Добавить конкурента
+          </button>
+        </div>
+
+        <CompetitorModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          competitor={selectedCompetitor}
+          mode={modalMode}
+        />
+      </>
+    );
+  }
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Конкуренты</h3>
-        <span className="text-sm text-gray-500 dark:text-gray-400">Всего: {data?.total || 0}</span>
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <select
+            value={filterThreat}
+            onChange={(e) => setFilterThreat(e.target.value as typeof filterThreat)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="all">Все уровни угрозы</option>
+            <option value="high">Высокая</option>
+            <option value="medium">Средняя</option>
+            <option value="low">Низкая</option>
+          </select>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Всего: {filteredItems.length}
+          </span>
+        </div>
+        <button
+          onClick={handleAdd}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Добавить конкурента
+        </button>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Название
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Сайт
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Сегмент
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Угроза
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Рынки
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Оборудование
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {data?.items?.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                  {item.name}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  {item.website ? (
-                    <a
-                      href={item.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {item.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  ) : (
-                    '-'
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredItems.map((item: CompetitorItem) => (
+          <div
+            key={item.id}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow"
+          >
+            {/* Заголовок карточки */}
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                {getFlagImg(item.countryCode)}
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                    {item.name}
+                  </h3>
+                  {item.country && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{item.country}</p>
                   )}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    {item.priceSegment === 'low'
-                      ? 'Эконом'
-                      : item.priceSegment === 'premium'
-                        ? 'Премиум'
-                        : 'Средний'}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <span
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getThreatLevelColor(item.threatLevel)}`}
-                  >
-                    {getThreatLevelLabel(item.threatLevel)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  {item._count?.markets || 0}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                  {item._count?.equipment || 0}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+              <span
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getThreatLevelColor(item.threatLevel)}`}
+              >
+                {getThreatLevelLabel(item.threatLevel)}
+              </span>
+            </div>
+
+            {/* Инфо строка */}
+            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300 mb-3">
+              {item.website && (
+                <a
+                  href={item.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {item.website.replace(/^https?:\/\//, '')}
+                </a>
+              )}
+              {item.foundedYear && (
+                <span>С {item.foundedYear} г.</span>
+              )}
+              {item.employeesCount && (
+                <span>{item.employeesCount} сотр.</span>
+              )}
+            </div>
+
+            {/* Сегмент */}
+            <div className="mb-3">
+              <span className="text-sm text-gray-500 dark:text-gray-400">Сегмент: </span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {getPriceSegmentLabel(item.priceSegment)}
+              </span>
+            </div>
+
+            {/* Сильные стороны */}
+            {item.strengths && item.strengths.length > 0 && (
+              <div className="mb-3">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Сильные стороны:</p>
+                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
+                  {item.strengths.slice(0, 3).map((s, i) => (
+                    <li key={i} className="flex items-start gap-1">
+                      <span className="text-green-500">+</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                  {item.strengths.length > 3 && (
+                    <li className="text-gray-400">и ещё {item.strengths.length - 3}...</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Слабые стороны */}
+            {item.weaknesses && item.weaknesses.length > 0 && (
+              <div className="mb-3">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Слабые стороны:</p>
+                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
+                  {item.weaknesses.slice(0, 2).map((w, i) => (
+                    <li key={i} className="flex items-start gap-1">
+                      <span className="text-red-500">−</span>
+                      <span>{w}</span>
+                    </li>
+                  ))}
+                  {item.weaknesses.length > 2 && (
+                    <li className="text-gray-400">и ещё {item.weaknesses.length - 2}...</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Продукция */}
+            {item.productRange && item.productRange.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  <span className="font-medium">Продукция:</span>{' '}
+                  {item.productRange.slice(0, 4).join(', ')}
+                  {item.productRange.length > 4 && ` и ещё ${item.productRange.length - 4}`}
+                </p>
+              </div>
+            )}
+
+            {/* Кнопки действий */}
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <button
+                onClick={() => handleEdit(item)}
+                className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
+                title="Редактировать"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDelete(item.id)}
+                className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-colors"
+                title="Удалить"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+
+      <CompetitorModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        competitor={selectedCompetitor}
+        mode={modalMode}
+      />
+    </>
   );
 };
 

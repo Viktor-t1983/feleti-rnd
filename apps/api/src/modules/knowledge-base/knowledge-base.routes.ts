@@ -355,6 +355,8 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
       email?: string;
       phone?: string;
       address?: string;
+      country?: string;
+      countryCode?: string;
       foundedYear?: number;
       employeesCount?: number;
       annualRevenue?: number;
@@ -394,6 +396,8 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
       email?: string;
       phone?: string;
       address?: string;
+      country?: string;
+      countryCode?: string;
       foundedYear?: number;
       employeesCount?: number;
       annualRevenue?: number;

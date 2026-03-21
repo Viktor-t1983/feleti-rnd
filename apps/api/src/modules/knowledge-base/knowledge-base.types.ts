@@ -169,6 +169,8 @@ export interface CreateCompetitorInput {
   email?: string;
   phone?: string;
   address?: string;
+  country?: string;
+  countryCode?: string;
   foundedYear?: number;
   employeesCount?: number;
   annualRevenue?: number;
@@ -187,6 +189,8 @@ export interface UpdateCompetitorInput {
   email?: string;
   phone?: string;
   address?: string;
+  country?: string;
+  countryCode?: string;
   foundedYear?: number;
   employeesCount?: number;
   annualRevenue?: number;
@@ -212,11 +216,18 @@ export interface CompetitorListItem {
   name: string;
   legalName: string | null;
   website: string | null;
+  country: string | null;
+  countryCode: string | null;
   annualRevenue: number | null;
   marketShare: number | null;
   priceSegment: string;
   isActive: boolean;
   threatLevel: string;
+  strengths: string[];
+  weaknesses: string[];
+  productRange: string[];
+  foundedYear: number | null;
+  employeesCount: number | null;
   _count?: {
     markets: number;
     equipment: number;
