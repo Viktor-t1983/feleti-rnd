@@ -316,20 +316,80 @@ model VoiceOfCustomer {
 }
 
 model Attachment {
-  id          String   @id @default(uuid())
-  filename    String
-  originalName String
-  mimeType    String
-  size        Int
-  path        String
-  projectId   String
-  uploadedById String
-  createdAt   DateTime @default(now())
-  
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  uploadedBy  User    @relation("UploadedAttachments", fields: [uploadedById], references: [id])
-  
+  id            String    @id @default(uuid())
+
+  // СУЩЕСТВУЮЩИЕ ПОЛЯ (не трогаем)
+  filename      String
+  originalName  String
+  mimeType      String
+  size          Int
+  path          String
+  uploadedById  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // ПРИВЯЗКА К СУЩНОСТИ
+  // Старое поле - оставляем для совместимости
+  projectId     String?    // было обязательным - делаем необязательным
+
+  // Новые поля для базы знаний
+  entityType    String?    // "project", "equipment", "market", "competitor"
+  entityId      String?    // ID любой сущности
+
+  // ТИП ИСТОЧНИКА
+  sourceType    String    @default("upload")
+  // "upload"        - файл загружен на сервер
+  // "external_url"  - https://youtube.com/...
+  // "file_link"     - http://nas.local/file или \\server\file
+  // "folder_link"   - ссылка на папку
+
+  // Для внешних ссылок и ссылок на файлы/папки
+  externalUrl   String?    // URL или сетевой путь
+
+  // Автоопределяемый провайдер
+  linkProvider  String?
+  // "youtube", "vimeo", "google_drive", "yandex_disk"
+  // "sharepoint", "onedrive", "network_path", "other"
+
+  // ТИП И КАТЕГОРИЯ МЕДИА
+  mediaType     String    @default("document")
+  // "photo", "video", "document", "archive", "cad"
+
+  category      String    @default("other")
+  // Оборудование: passport, manual, drawing, specification, certificate, commercial_offer, photo, video_demo
+  // Конкуренты: competitor_offer, catalog, price_list, patent
+  // Рынки: report, statistics, distributor_contacts, meeting_notes
+  // Общие: photo, video, other
+
+  // МЕТАДАННЫЕ
+  title         String?    // Название которое задал пользователь
+  description   String?    // Описание
+  tags          String[]   // Теги для поиска
+
+  // ВЕРСИОННОСТЬ
+  version       String?    @default("1.0")
+  isLatest      Boolean   @default(true)
+
+  // ДОСТУП
+  accessLevel   String    @default("internal")
+  // "public", "internal", "restricted"
+
+  // СРОК ДЕЙСТВИЯ
+  validUntil    DateTime?  // Когда истекает (для КП, сертификатов)
+  dataYear      Int?       // Год данных (для статистики, отчётов)
+
+  // ПРЕВЬЮ
+  thumbnailPath String?    // Путь к миниатюре (для фото)
+
+  // СВЯЗИ
+  project       Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy    User      @relation("UploadedAttachments", fields: [uploadedById], references: [id])
+
   @@index([projectId])
+  @@index([entityType, entityId])
+  @@index([mediaType, category])
+  @@index([isLatest])
+  @@index([uploadedById])
 }
 
 model Notification {

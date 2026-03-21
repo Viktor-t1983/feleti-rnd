@@ -121,26 +121,44 @@ export async function attachmentsRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Проверяем членство в проекте
-      const membership = await prisma.projectMember.findUnique({
-        where: {
-          projectId_userId: {
-            projectId: attachment.projectId,
-            userId,
-          },
-        },
-      });
-
-      // Владелец проекта тоже имеет доступ
-      const project = await prisma.project.findUnique({
-        where: { id: attachment.projectId },
-        select: { ownerId: true },
-      });
-
-      if (!membership && project?.ownerId !== userId) {
-        return reply.code(403).send({
-          error: 'Вы не являетесь членом проекта',
+      // Если файл не привязан к проекту (база знаний), проверяем entity-based доступ
+      if (!attachment.projectId) {
+        // TODO: Добавить проверку доступа к entity (equipment/market/competitor)
+        // Пока разрешаем автору и админам
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { role: { select: { name: true } } },
         });
+        const isAdmin = user?.role?.name === 'Admin';
+        const isOwner = attachment.uploadedById === userId;
+
+        if (!isAdmin && !isOwner) {
+          return reply.code(403).send({
+            error: 'Нет доступа к файлу базы знаний',
+          });
+        }
+      } else {
+        // Проверяем членство в проекте
+        const membership = await prisma.projectMember.findUnique({
+          where: {
+            projectId_userId: {
+              projectId: attachment.projectId,
+              userId,
+            },
+          },
+        });
+
+        // Владелец проекта тоже имеет доступ
+        const project = await prisma.project.findUnique({
+          where: { id: attachment.projectId },
+          select: { ownerId: true },
+        });
+
+        if (!membership && project?.ownerId !== userId) {
+          return reply.code(403).send({
+            error: 'Вы не являетесь членом проекта',
+          });
+        }
       }
 
       // Проверяем что файл существует
