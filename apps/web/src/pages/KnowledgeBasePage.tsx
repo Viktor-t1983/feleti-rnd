@@ -4,9 +4,9 @@
  */
 
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Paperclip } from 'lucide-react';
 
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -107,6 +107,25 @@ interface CalculationItem {
   isActive: boolean;
 }
 
+interface MediaAttachment {
+  id: string;
+  sourceType: 'upload' | 'external_url' | 'file_link' | 'folder_link';
+  mediaType: 'photo' | 'video' | 'document' | 'archive' | 'cad';
+  category: string;
+  title: string;
+  description?: string;
+  externalUrl?: string;
+  linkProvider?: string;
+  path?: string;
+  fileSize?: number;
+  originalName?: string;
+  tags?: string[];
+  validUntil?: string;
+  dataYear?: number;
+  uploadedBy?: { fullName: string };
+  createdAt: string;
+}
+
 type TabType = 'overview' | 'equipment' | 'markets' | 'competitors' | 'calculations';
 
 // ==========================================
@@ -193,6 +212,72 @@ const getThreatLevelColor = (level: string): string => {
     high: 'bg-red-100 text-red-800',
   };
   return colors[level] || 'bg-gray-100 text-gray-800';
+};
+
+// ═══ МЕТОДЫ ДЛЯ МЕДИА ═══
+
+const getProviderIcon = (provider?: string): string => {
+  const icons: Record<string, string> = {
+    youtube: '▶️',
+    vimeo: '🎬',
+    google_drive: '📁',
+    yandex_disk: '☁️',
+    sharepoint: '📋',
+    onedrive: '💾',
+    network_path: '🖥️',
+    other: '🔗',
+  };
+  return icons[provider || 'other'] || '🔗';
+};
+
+const getMediaTypeIcon = (mediaType: string): string => {
+  const icons: Record<string, string> = {
+    photo: '🖼️',
+    video: '🎥',
+    document: '📄',
+    archive: '📦',
+    cad: '📐',
+  };
+  return icons[mediaType] || '📎';
+};
+
+const getCategoryName = (category: string): string => {
+  const names: Record<string, string> = {
+    passport: 'Паспорт изделия',
+    manual: 'Инструкция',
+    drawing: 'Чертёж',
+    specification: 'Спецификация',
+    certificate: 'Сертификат',
+    commercial_offer: 'КП клиенту',
+    video_demo: 'Демонстрация',
+    photo: 'Фото',
+    competitor_offer: 'КП конкурента',
+    catalog: 'Каталог',
+    price_list: 'Прайс-лист',
+    report: 'Отчёт',
+    statistics: 'Статистика',
+    meeting_notes: 'Протокол',
+    other: 'Другое',
+  };
+  return names[category] || category;
+};
+
+const formatFileSize = (bytes?: number): string => {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} МБ`;
+};
+
+const isExpired = (validUntil?: string): boolean => {
+  if (!validUntil) return false;
+  return new Date(validUntil) < new Date();
+};
+
+const isExpiringSoon = (validUntil?: string): boolean => {
+  if (!validUntil) return false;
+  const diff = new Date(validUntil).getTime() - Date.now();
+  return diff > 0 && diff < 30 * 24 * 60 * 60 * 1000;
 };
 
 // ==========================================
@@ -417,6 +502,290 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
   );
 };
 
+// ═══ MEDIA PANEL COMPONENT ═══
+
+interface MediaPanelProps {
+  entityType: string;
+  entityId: string;
+  onClose: () => void;
+}
+
+const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose }) => {
+  const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addType, setAddType] = useState<'upload' | 'link'>('link');
+  const [linkForm, setLinkForm] = useState({
+    externalUrl: '',
+    sourceType: 'external_url' as 'external_url' | 'file_link' | 'folder_link',
+    mediaType: 'document',
+    title: '',
+    category: 'other',
+    dataYear: '',
+    tags: '',
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const loadAttachments = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/api/knowledge/${entityType}/${entityId}/attachments`);
+      setAttachments(data?.data || []);
+    } catch (e) {
+      console.error('Error loading attachments:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAttachments();
+  }, [entityId]);
+
+  const handleAddLink = async () => {
+    if (!linkForm.externalUrl || !linkForm.title) return;
+    try {
+      await api.post(`/api/knowledge/${entityType}/${entityId}/links`, {
+        ...linkForm,
+        dataYear: linkForm.dataYear ? parseInt(linkForm.dataYear) : undefined,
+        tags: linkForm.tags ? linkForm.tags.split(',').map(t => t.trim()) : [],
+      });
+      setShowAddModal(false);
+      setLinkForm({ externalUrl: '', sourceType: 'external_url', mediaType: 'document', title: '', category: 'other', dataYear: '', tags: '' });
+      loadAttachments();
+    } catch (e) {
+      console.error(e);
+      toast.error('Ошибка добавления ссылки');
+    }
+  };
+
+  const handleUploadFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', file.name);
+    formData.append('category', 'other');
+    try {
+      await api.post(`/api/knowledge/${entityType}/${entityId}/attachments`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setShowAddModal(false);
+      loadAttachments();
+      toast.success('Файл загружен');
+    } catch (e) {
+      console.error(e);
+      toast.error('Ошибка загрузки файла');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Удалить этот файл/ссылку?')) return;
+    try {
+      await api.delete(`/api/knowledge/attachments/${id}`);
+      loadAttachments();
+      toast.success('Удалено');
+    } catch (e) {
+      console.error(e);
+      toast.error('Ошибка удаления');
+    }
+  };
+
+  const openMedia = (att: MediaAttachment) => {
+    if (att.sourceType === 'upload') {
+      window.open(`/api/attachments/${att.id}/download`, '_blank');
+    } else if (att.externalUrl) {
+      if (att.linkProvider === 'network_path') {
+        navigator.clipboard.writeText(att.externalUrl);
+        toast.success('Путь скопирован в буфер обмена');
+      } else {
+        window.open(att.externalUrl, '_blank');
+      }
+    }
+  };
+
+  const photos = attachments.filter(a => a.mediaType === 'photo');
+  const videos = attachments.filter(a => a.mediaType === 'video');
+  const documents = attachments.filter(a =>
+    a.mediaType === 'document' || a.mediaType === 'archive' || a.mediaType === 'cad'
+  );
+
+  return (
+    <div className="bg-slate-900 border border-slate-700 border-t-0 p-4 rounded-b-lg">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex gap-4">
+          {[
+            { label: `Фото (${photos.length})`, count: photos.length },
+            { label: `Видео (${videos.length})`, count: videos.length },
+            { label: `Документы (${documents.length})`, count: documents.length },
+          ].map(tab => (
+            <span key={tab.label} className={`text-xs font-semibold ${tab.count > 0 ? 'text-blue-400' : 'text-slate-500'}`}>
+              {tab.label}
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setShowAddModal(true); setAddType('link'); }}
+            className="px-3 py-1.5 text-xs bg-blue-700 text-white rounded hover:bg-blue-600"
+          >
+            + Ссылка
+          </button>
+          <button
+            onClick={() => { setShowAddModal(true); setAddType('upload'); }}
+            className="px-3 py-1.5 text-xs bg-emerald-700 text-white rounded hover:bg-emerald-600"
+          >
+            + Файл
+          </button>
+          <button onClick={onClose} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">✕</button>
+        </div>
+      </div>
+
+      {/* List */}
+      {loading ? (
+        <div className="text-slate-500 text-sm py-4">Загрузка...</div>
+      ) : attachments.length === 0 ? (
+        <div className="text-slate-500 text-sm text-center py-6">
+          Медиафайлов нет. Нажмите "+ Ссылка" или "+ Файл" чтобы добавить.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {attachments.map(att => {
+            const expired = isExpired(att.validUntil);
+            const expiringSoon = isExpiringSoon(att.validUntil);
+            return (
+              <div key={att.id} className={`flex items-center gap-3 p-2 rounded ${expired ? 'bg-red-950/30 border border-red-900' : expiringSoon ? 'bg-amber-950/30 border border-amber-900' : 'bg-slate-800 border border-slate-700'}`}>
+                <span className="text-lg">{att.sourceType === 'upload' ? getMediaTypeIcon(att.mediaType) : getProviderIcon(att.linkProvider)}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-slate-100 truncate">{att.title}</div>
+                  <div className="text-xs text-slate-500 flex gap-2 mt-0.5">
+                    <span>{getCategoryName(att.category)}</span>
+                    {att.dataYear && <span>{att.dataYear} г.</span>}
+                    {att.fileSize && <span>{formatFileSize(att.fileSize)}</span>}
+                    {att.tags && att.tags.length > 0 && <span>{att.tags.slice(0, 3).join(', ')}</span>}
+                  </div>
+                </div>
+                {expired && <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">Истёк</span>}
+                {expiringSoon && !expired && <span className="text-xs bg-amber-900 text-amber-300 px-2 py-0.5 rounded-full">Скоро истечёт</span>}
+                <span className="text-xs text-slate-500">
+                  {att.sourceType === 'upload' ? 'Локально' : att.sourceType === 'folder_link' ? 'Папка' : att.sourceType === 'file_link' ? 'Файл' : 'URL'}
+                </span>
+                <div className="flex gap-1">
+                  <button onClick={() => openMedia(att)} className="px-2 py-1 text-xs border border-blue-700 text-blue-400 rounded hover:bg-blue-900/30">
+                    {att.linkProvider === 'network_path' ? 'Копировать' : 'Открыть'}
+                  </button>
+                  <button onClick={() => handleDelete(att.id)} className="px-2 py-1 text-xs border border-red-800 text-red-400 rounded hover:bg-red-900/30">🗑</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-slate-800 rounded-lg p-5 w-[520px] border border-slate-600">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-base font-bold text-white">{addType === 'link' ? 'Добавить ссылку' : 'Загрузить файл'}</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white text-xl">×</button>
+            </div>
+
+            {addType === 'link' ? (
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="text-xs text-slate-500 uppercase block mb-1">Тип источника</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { value: 'external_url', label: 'URL / YouTube' },
+                      { value: 'file_link', label: 'Ссылка на файл' },
+                      { value: 'folder_link', label: 'Ссылка на папку' },
+                    ].map(opt => (
+                      <button key={opt.value} onClick={() => setLinkForm({ ...linkForm, sourceType: opt.value as any })}
+                        className={`py-2 text-xs rounded border ${linkForm.sourceType === opt.value ? 'border-blue-500 bg-blue-900/30 text-white' : 'border-slate-600 text-slate-300'}`}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 uppercase block mb-1">{linkForm.sourceType === 'folder_link' ? 'Путь к папке *' : 'URL / Путь *'}</label>
+                  <input type="text" value={linkForm.externalUrl} onChange={e => setLinkForm({ ...linkForm, externalUrl: e.target.value })}
+                    placeholder={linkForm.sourceType === 'folder_link' ? '\\\\server\\docs\\FM-3000\\' : linkForm.sourceType === 'file_link' ? 'http://nas.local/video.mp4' : 'https://youtube.com/watch?v=...'}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500 uppercase block mb-1">Название *</label>
+                  <input type="text" value={linkForm.title} onChange={e => setLinkForm({ ...linkForm, title: e.target.value })}
+                    placeholder="Демонстрация работы FM-3000"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase block mb-1">Тип</label>
+                    <select value={linkForm.mediaType} onChange={e => setLinkForm({ ...linkForm, mediaType: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm">
+                      <option value="document">Документ</option>
+                      <option value="video">Видео</option>
+                      <option value="photo">Фото</option>
+                      <option value="archive">Архив</option>
+                      <option value="cad">Чертёж (CAD)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase block mb-1">Категория</label>
+                    <select value={linkForm.category} onChange={e => setLinkForm({ ...linkForm, category: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm">
+                      <option value="passport">Паспорт</option>
+                      <option value="manual">Инструкция</option>
+                      <option value="drawing">Чертёж</option>
+                      <option value="specification">Спецификация</option>
+                      <option value="certificate">Сертификат</option>
+                      <option value="commercial_offer">КП клиенту</option>
+                      <option value="video_demo">Демонстрация</option>
+                      <option value="other">Другое</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase block mb-1">Год данных</label>
+                    <input type="number" value={linkForm.dataYear} onChange={e => setLinkForm({ ...linkForm, dataYear: e.target.value })}
+                      placeholder="2024" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase block mb-1">Теги (через запятую)</label>
+                    <input type="text" value={linkForm.tags} onChange={e => setLinkForm({ ...linkForm, tags: e.target.value })}
+                      placeholder="демо, FM-3000" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+                  </div>
+                </div>
+                <div className="flex gap-2 justify-end mt-2">
+                  <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Отмена</button>
+                  <button onClick={handleAddLink} disabled={!linkForm.externalUrl || !linkForm.title}
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded disabled:opacity-50">Прикрепить</button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) handleUploadFile(file); }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-600 rounded-lg p-10 text-center cursor-pointer hover:border-slate-400">
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) handleUploadFile(file); }} />
+                  <div className="text-4xl mb-3">📎</div>
+                  <div className="text-sm text-white mb-2">Перетащите файл или нажмите для выбора</div>
+                  <div className="text-xs text-slate-500">PDF, Word, Excel, фото, архивы, чертежи (до 50МБ)</div>
+                </div>
+                <div className="flex justify-end mt-4">
+                  <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Отмена</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ==========================================
 // EQUIPMENT TAB
 // ==========================================
@@ -433,6 +802,7 @@ const EquipmentTab = () => {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleAdd = () => {
     setModalMode('create');
@@ -526,7 +896,8 @@ const EquipmentTab = () => {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {data?.items?.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <React.Fragment key={item.id}>
+                  <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                     {item.code}
                   </td>
@@ -558,6 +929,18 @@ const EquipmentTab = () => {
                   <td className="px-4 py-3 text-sm">
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold shadow-sm ${
+                          expandedId === item.id
+                            ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                        }`}
+                        title={expandedId === item.id ? 'Скрыть медиа' : 'Показать медиа'}
+                      >
+                        <Paperclip className="w-4 h-4" />
+                        <span>Медиа</span>
+                      </button>
+                      <button
                         onClick={() => handleEdit(item)}
                         className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
                         title="Редактировать"
@@ -583,6 +966,18 @@ const EquipmentTab = () => {
                     </div>
                   </td>
                 </tr>
+                {expandedId === item.id && (
+                  <tr>
+                    <td colSpan={7} className="p-0">
+                      <MediaPanel
+                        entityType="equipment"
+                        entityId={item.id}
+                        onClose={() => setExpandedId(null)}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
