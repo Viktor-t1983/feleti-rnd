@@ -13,6 +13,25 @@ import {
   UpdateProjectInput,
 } from '../../types/project.types';
 
+// Переводы для стадий проекта
+const stageTranslations: Record<ProjectStage, string> = {
+  [ProjectStage.IDEA]: 'Идея',
+  [ProjectStage.CONCEPT]: 'Концепт',
+  [ProjectStage.DESIGN]: 'Проектирование',
+  [ProjectStage.PROTOTYPE]: 'Прототип',
+  [ProjectStage.TESTING]: 'Тестирование',
+  [ProjectStage.PRODUCTION]: 'Производство',
+  [ProjectStage.COMPLETED]: 'Завершён',
+};
+
+// Переводы для статусов проекта
+const statusTranslations: Record<ProjectStatus, string> = {
+  [ProjectStatus.ACTIVE]: 'Активен',
+  [ProjectStatus.ON_HOLD]: 'Приостановлен',
+  [ProjectStatus.CANCELLED]: 'Отменён',
+  [ProjectStatus.COMPLETED]: 'Завершён',
+};
+
 interface ProjectFormProps {
   mode: 'create' | 'edit';
   initialData?: CreateProjectInput | UpdateProjectInput;
@@ -66,18 +85,19 @@ export function ProjectForm({
     if (mode === 'create') {
       const createData = formData as CreateProjectInput;
       if (!createData.code) {
-        newErrors['code'] = 'Code is required';
-      } else if (!/^[A-Z]-\d+$/.test(createData.code)) {
-        newErrors['code'] = 'Code must be in format: X-000 (e.g., K-200)';
+        newErrors['code'] = 'Код обязателен';
+      } else if (!/^[A-Za-z0-9][A-Za-z0-9-]{1,19}$/.test(createData.code)) {
+        newErrors['code'] =
+          'Код: 2-20 символов, буквы, цифры и дефис (например: F374476, K-200, FM-VAC-3T)';
       }
 
       if (!createData.ownerId) {
-        newErrors['ownerId'] = 'Owner is required';
+        newErrors['ownerId'] = 'Владелец обязателен';
       }
     }
 
     if (!formData.name) {
-      newErrors['name'] = 'Name is required';
+      newErrors['name'] = 'Название обязательно';
     }
 
     setErrors(newErrors);
@@ -130,7 +150,7 @@ export function ProjectForm({
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sm:p-8">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-        {mode === 'create' ? 'Create New Project' : 'Edit Project'}
+        {mode === 'create' ? 'Создание проекта' : 'Редактирование проекта'}
       </h2>
 
       {errors['form'] ? (
@@ -147,14 +167,14 @@ export function ProjectForm({
               htmlFor="code"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Project Code *
+              Код проекта *
             </label>
             <input
               id="code"
               type="text"
               value={(formData as CreateProjectInput).code}
               onChange={(e) => handleChange('code', e.target.value.toUpperCase())}
-              placeholder="K-200"
+              placeholder="Например: K-200"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               data-testid="project-code-input"
             />
@@ -172,14 +192,14 @@ export function ProjectForm({
             htmlFor="name"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            Project Name *
+            Название проекта *
           </label>
           <input
             id="name"
             type="text"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
-            placeholder="Название проекта"
+            placeholder="Введите название проекта"
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             data-testid="project-name-input"
           />
@@ -190,33 +210,33 @@ export function ProjectForm({
           ) : null}
         </div>
 
-        {/* Description */}
+        {/* Описание */}
         <div>
           <label
             htmlFor="description"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            Description
+            Описание
           </label>
           <textarea
             id="description"
             value={formData.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
-            placeholder="Опишите ваш проект..."
+            placeholder="Опишите ваш проект (необязательно)..."
             rows={3}
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             data-testid="project-description-input"
           />
         </div>
 
-        {/* Stage and Status */}
+        {/* Стадия и статус */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label
               htmlFor="stage"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Stage
+              Стадия
             </label>
             <select
               id="stage"
@@ -227,7 +247,7 @@ export function ProjectForm({
             >
               {Object.values(ProjectStage).map((stage) => (
                 <option key={stage} value={stage}>
-                  {stage}
+                  {stageTranslations[stage]}
                 </option>
               ))}
             </select>
@@ -238,7 +258,7 @@ export function ProjectForm({
               htmlFor="status"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Status
+              Статус
             </label>
             <select
               id="status"
@@ -249,20 +269,20 @@ export function ProjectForm({
             >
               {Object.values(ProjectStatus).map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {statusTranslations[status]}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        {/* Priority */}
+        {/* Приоритет */}
         <div>
           <label
             htmlFor="priority"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            Priority
+            Приоритет
           </label>
           <select
             id="priority"
@@ -271,9 +291,9 @@ export function ProjectForm({
             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             data-testid="project-priority-select"
           >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+            <option value="low">Низкий</option>
+            <option value="medium">Средний</option>
+            <option value="high">Высокий</option>
           </select>
         </div>
 
@@ -284,7 +304,7 @@ export function ProjectForm({
               htmlFor="startDate"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Start Date
+              Дата начала
             </label>
             <input
               id="startDate"
@@ -301,7 +321,7 @@ export function ProjectForm({
               htmlFor="endDate"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              End Date
+              Дата окончания
             </label>
             <input
               id="endDate"
@@ -318,7 +338,7 @@ export function ProjectForm({
               htmlFor="targetDate"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Target Date
+              Целевая дата
             </label>
             <input
               id="targetDate"
@@ -337,7 +357,7 @@ export function ProjectForm({
             htmlFor="budget"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
           >
-            Budget (RUB)
+            Бюджет (руб.)
           </label>
           <input
             id="budget"
@@ -361,14 +381,14 @@ export function ProjectForm({
               htmlFor="ownerId"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
             >
-              Owner ID *
+              ID владельца *
             </label>
             <input
               id="ownerId"
               type="text"
               value={(formData as CreateProjectInput).ownerId}
               onChange={(e) => handleChange('ownerId', e.target.value)}
-              placeholder="user-id"
+              placeholder="uuid владельца"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               data-testid="project-owner-id-input"
             />
@@ -401,12 +421,12 @@ export function ProjectForm({
                     fill="none"
                   />
                 </svg>
-                <span className="ml-2">Saving...</span>
+                <span className="ml-2">Сохранение...</span>
               </span>
             ) : mode === 'create' ? (
-              'Create Project'
+              'Создать проект'
             ) : (
-              'Save Changes'
+              'Сохранить изменения'
             )}
           </button>
 
@@ -418,7 +438,7 @@ export function ProjectForm({
               className="flex-1 py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-medium rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               data-testid="project-cancel-button"
             >
-              Cancel
+              Отмена
             </button>
           ) : null}
         </div>
