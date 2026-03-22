@@ -189,4 +189,220 @@ export class AttachmentsService {
       where: { projectId },
     });
   }
+
+  // ═══ МЕТОДЫ ДЛЯ БАЗЫ ЗНАНИЙ ═══
+
+  /**
+   * Определить провайдера по URL
+   */
+  private detectLinkProvider(url: string): string {
+    if (!url) return 'other';
+    const u = url.toLowerCase();
+    if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+    if (u.includes('vimeo.com')) return 'vimeo';
+    if (u.includes('drive.google.com')) return 'google_drive';
+    if (u.includes('disk.yandex') || u.includes('yadi.sk')) return 'yandex_disk';
+    if (u.includes('sharepoint.com')) return 'sharepoint';
+    if (u.includes('onedrive.live.com') || u.includes('1drv.ms')) return 'onedrive';
+    if (u.startsWith('\\\\') || u.startsWith('//')) return 'network_path';
+    return 'other';
+  }
+
+  /**
+   * Определить mediaType по mimeType
+   */
+  private detectMediaType(mimeType: string): string {
+    if (mimeType.startsWith('image/')) return 'photo';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (
+      mimeType === 'application/zip' ||
+      mimeType === 'application/x-rar-compressed' ||
+      mimeType === 'application/x-7z-compressed'
+    )
+      return 'archive';
+    if (mimeType === 'image/vnd.dwg' || mimeType === 'image/vnd.dxf') return 'cad';
+    return 'document';
+  }
+
+  /**
+   * Загрузить файл к сущности базы знаний
+   */
+  async uploadToEntity(data: {
+    entityType: string;
+    entityId: string;
+    userId: string;
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    buffer: Buffer;
+    title?: string;
+    description?: string;
+    category?: string;
+    tags?: string[];
+    version?: string;
+    accessLevel?: string;
+    validUntil?: Date;
+    dataYear?: number;
+  }) {
+    // Валидация типа
+    if (!['equipment', 'market', 'competitor'].includes(data.entityType)) {
+      throw new Error(`Неверный тип сущности: ${data.entityType}`);
+    }
+
+    // Сохранить файл на диск
+    const uploadDir = join(UPLOAD_DIR, data.entityType, data.entityId);
+    await mkdir(uploadDir, { recursive: true });
+    const filePath = join(uploadDir, data.filename);
+    await writeFile(filePath, data.buffer);
+
+    const mediaType = this.detectMediaType(data.mimeType);
+    const relativePath = join(data.entityType, data.entityId, data.filename);
+
+    return prisma.attachment.create({
+      data: {
+        filename: data.filename,
+        originalName: data.originalName,
+        mimeType: data.mimeType,
+        size: data.size,
+        path: relativePath,
+        uploadedById: data.userId,
+        entityType: data.entityType,
+        entityId: data.entityId,
+        sourceType: 'upload',
+        mediaType,
+        category: data.category || 'other',
+        title: data.title || data.originalName,
+        description: data.description,
+        tags: data.tags || [],
+        version: data.version || '1.0',
+        isLatest: true,
+        accessLevel: data.accessLevel || 'internal',
+        validUntil: data.validUntil,
+        dataYear: data.dataYear,
+      },
+      include: {
+        uploadedBy: {
+          select: { id: true, fullName: true, username: true },
+        },
+      },
+    });
+  }
+
+  /**
+   * Создать внешнюю ссылку (YouTube, NAS, сетевая папка)
+   */
+  async createExternalLink(data: {
+    entityType: string;
+    entityId: string;
+    userId: string;
+    externalUrl: string;
+    sourceType: 'external_url' | 'file_link' | 'folder_link';
+    mediaType: string;
+    title: string;
+    description?: string;
+    category?: string;
+    tags?: string[];
+    accessLevel?: string;
+    validUntil?: Date;
+    dataYear?: number;
+  }) {
+    if (!['equipment', 'market', 'competitor'].includes(data.entityType)) {
+      throw new Error(`Неверный тип сущности: ${data.entityType}`);
+    }
+
+    const linkProvider = this.detectLinkProvider(data.externalUrl);
+
+    return prisma.attachment.create({
+      data: {
+        filename: `link_${Date.now()}`,
+        originalName: data.title,
+        mimeType: 'application/octet-stream',
+        size: 0,
+        path: '',
+        uploadedById: data.userId,
+        entityType: data.entityType,
+        entityId: data.entityId,
+        sourceType: data.sourceType,
+        externalUrl: data.externalUrl,
+        linkProvider,
+        mediaType: data.mediaType,
+        category: data.category || 'other',
+        title: data.title,
+        description: data.description,
+        tags: data.tags || [],
+        version: '1.0',
+        isLatest: true,
+        accessLevel: data.accessLevel || 'internal',
+        validUntil: data.validUntil,
+        dataYear: data.dataYear,
+      },
+      include: {
+        uploadedBy: {
+          select: { id: true, fullName: true, username: true },
+        },
+      },
+    });
+  }
+
+  /**
+   * Получить все медиа по сущности
+   */
+  async getByEntity(
+    entityType: string,
+    entityId: string,
+    filters?: {
+      mediaType?: string;
+      category?: string;
+      onlyLatest?: boolean;
+    }
+  ) {
+    return prisma.attachment.findMany({
+      where: {
+        entityType,
+        entityId,
+        ...(filters?.mediaType && { mediaType: filters.mediaType }),
+        ...(filters?.category && { category: filters.category }),
+        ...(filters?.onlyLatest !== false && { isLatest: true }),
+      },
+      include: {
+        uploadedBy: {
+          select: { id: true, fullName: true, username: true },
+        },
+      },
+      orderBy: [{ mediaType: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  /**
+   * Удалить медиа базы знаний
+   */
+  async deleteKnowledgeAttachment(id: string, userId: string) {
+    const attachment = await prisma.attachment.findUnique({ where: { id } });
+    if (!attachment) throw new Error('Файл не найден');
+
+    // Проверяем права на удаление
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: { select: { name: true } } },
+    });
+    const isAdmin = user?.role?.name === 'Admin';
+    const isOwner = attachment.uploadedById === userId;
+
+    if (!isAdmin && !isOwner) {
+      throw new Error('Нет прав для удаления');
+    }
+
+    // Удалить физический файл если это upload
+    if (attachment.sourceType === 'upload' && attachment.path) {
+      const fullPath = join(UPLOAD_DIR, attachment.path);
+      try {
+        await unlink(fullPath);
+      } catch {
+        console.warn('Файл не найден на диске при удалении:', fullPath);
+      }
+    }
+
+    await prisma.attachment.delete({ where: { id } });
+  }
 }
