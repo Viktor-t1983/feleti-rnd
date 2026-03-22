@@ -504,13 +504,30 @@ const OverviewTab = ({ summary }: { summary: KnowledgeBaseSummary | undefined })
 
 // ═══ MEDIA PANEL COMPONENT ═══
 
+interface CategoryOption {
+  value: string;
+  label: string;
+}
+
 interface MediaPanelProps {
   entityType: string;
   entityId: string;
   onClose: () => void;
+  categories?: CategoryOption[];
 }
 
-const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose }) => {
+const DEFAULT_CATEGORIES: CategoryOption[] = [
+  { value: 'passport', label: 'Паспорт изделия' },
+  { value: 'manual', label: 'Инструкция' },
+  { value: 'drawing', label: 'Чертёж' },
+  { value: 'specification', label: 'Спецификация' },
+  { value: 'certificate', label: 'Сертификат' },
+  { value: 'commercial_offer', label: 'КП клиенту' },
+  { value: 'video_demo', label: 'Демонстрация' },
+  { value: 'other', label: 'Другое' },
+];
+
+const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, categories }) => {
   const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -540,6 +557,7 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose }
 
   useEffect(() => {
     loadAttachments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId]);
 
   const handleAddLink = async () => {
@@ -645,7 +663,7 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose }
         <div className="text-slate-500 text-sm py-4">Загрузка...</div>
       ) : attachments.length === 0 ? (
         <div className="text-slate-500 text-sm text-center py-6">
-          Медиафайлов нет. Нажмите "+ Ссылка" или "+ Файл" чтобы добавить.
+          Медиафайлов нет. Нажмите &quot;+ Ссылка&quot; или &quot;+ Файл&quot; чтобы добавить.
         </div>
       ) : (
         <div className="flex flex-col gap-2">
@@ -700,7 +718,7 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose }
                       { value: 'file_link', label: 'Ссылка на файл' },
                       { value: 'folder_link', label: 'Ссылка на папку' },
                     ].map(opt => (
-                      <button key={opt.value} onClick={() => setLinkForm({ ...linkForm, sourceType: opt.value as any })}
+                      <button key={opt.value} onClick={() => setLinkForm({ ...linkForm, sourceType: opt.value as 'external_url' | 'file_link' | 'folder_link' })}
                         className={`py-2 text-xs rounded border ${linkForm.sourceType === opt.value ? 'border-blue-500 bg-blue-900/30 text-white' : 'border-slate-600 text-slate-300'}`}>
                         {opt.label}
                       </button>
@@ -735,14 +753,9 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose }
                     <label className="text-xs text-slate-500 uppercase block mb-1">Категория</label>
                     <select value={linkForm.category} onChange={e => setLinkForm({ ...linkForm, category: e.target.value })}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm">
-                      <option value="passport">Паспорт</option>
-                      <option value="manual">Инструкция</option>
-                      <option value="drawing">Чертёж</option>
-                      <option value="specification">Спецификация</option>
-                      <option value="certificate">Сертификат</option>
-                      <option value="commercial_offer">КП клиенту</option>
-                      <option value="video_demo">Демонстрация</option>
-                      <option value="other">Другое</option>
+                      {(categories || DEFAULT_CATEGORIES).map(cat => (
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -1068,6 +1081,7 @@ const MarketsTab = () => {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedMarket, setSelectedMarket] = useState<MarketItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const handleAdd = () => {
@@ -1194,7 +1208,8 @@ const MarketsTab = () => {
                 {filteredItems.map((item: MarketItem) => {
                   const badge = getPriorityBadge(item.priority);
                   return (
-                    <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <React.Fragment key={item.id}>
+                      <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
                         <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {getFlagImg(item.code)}
@@ -1228,6 +1243,18 @@ const MarketsTab = () => {
                       <td className="px-4 py-3 text-sm">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold shadow-sm ${
+                              expandedId === item.id
+                                ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                            }`}
+                            title={expandedId === item.id ? 'Скрыть медиа' : 'Показать медиа'}
+                          >
+                            <Paperclip className="w-3.5 h-3.5" />
+                            <span>Медиа</span>
+                          </button>
+                          <button
                             onClick={() => handleEdit(item)}
                             className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
                             title="Редактировать"
@@ -1249,6 +1276,26 @@ const MarketsTab = () => {
                         </div>
                       </td>
                     </tr>
+                    {expandedId === item.id && (
+                      <tr>
+                        <td colSpan={8} style={{ padding: 0 }}>
+                          <MediaPanel
+                            entityType="market"
+                            entityId={item.id}
+                            onClose={() => setExpandedId(null)}
+                            categories={[
+                              { value: 'report', label: 'Отчёт по рынку' },
+                              { value: 'statistics', label: 'Статистика' },
+                              { value: 'distributor_contacts', label: 'Контакты дистрибьюторов' },
+                              { value: 'meeting_notes', label: 'Протокол переговоров' },
+                              { value: 'commercial_offer', label: 'КП конкурента на рынке' },
+                              { value: 'other', label: 'Другое' },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>
@@ -1301,6 +1348,7 @@ const CompetitorsTab = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorItem | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
@@ -1555,6 +1603,18 @@ const CompetitorsTab = () => {
             {/* Кнопки действий */}
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
               <button
+                onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold shadow-sm ${
+                  expandedId === item.id
+                    ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                }`}
+                title={expandedId === item.id ? 'Скрыть медиа' : 'Показать медиа'}
+              >
+                <Paperclip className="w-3.5 h-3.5" />
+                <span>Медиа</span>
+              </button>
+              <button
                 onClick={() => handleEdit(item)}
                 className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
                 title="Редактировать"
@@ -1569,6 +1629,22 @@ const CompetitorsTab = () => {
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
+            {expandedId === item.id && (
+              <MediaPanel
+                entityType="competitor"
+                entityId={item.id}
+                onClose={() => setExpandedId(null)}
+                categories={[
+                  { value: 'competitor_offer', label: 'КП конкурента (с ценами)' },
+                  { value: 'catalog', label: 'Каталог продукции' },
+                  { value: 'price_list', label: 'Прайс-лист' },
+                  { value: 'patent', label: 'Патент' },
+                  { value: 'photo', label: 'Фото продукции' },
+                  { value: 'video_demo', label: 'Видео демонстрация' },
+                  { value: 'other', label: 'Другое' },
+                ]}
+              />
+            )}
           </div>
         ))}
       </div>
