@@ -140,18 +140,45 @@ const fetchSummary = async (): Promise<KnowledgeBaseSummary> => {
 const fetchEquipment = async (params?: {
   category?: string;
   search?: string;
-}): Promise<{ items: EquipmentItem[]; total: number }> => {
-  const { data } = await api.get('/api/knowledge/equipment', { params });
+  page?: number;
+  limit?: number;
+}): Promise<{ items: EquipmentItem[]; total: number; page: number; limit: number }> => {
+  const query = new URLSearchParams();
+  if (params?.category) query.set('category', params.category);
+  if (params?.search) query.set('search', params.search);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.limit) query.set('limit', String(params.limit ?? 20));
+  const { data } = await api.get(`/api/knowledge/equipment?${query.toString()}`);
   return data;
 };
 
-const fetchMarkets = async (): Promise<{ items: MarketItem[]; total: number }> => {
-  const { data } = await api.get('/api/knowledge/markets');
+const fetchMarkets = async (params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+  region?: string;
+}): Promise<{ items: MarketItem[]; total: number; page: number; limit: number }> => {
+  const query = new URLSearchParams();
+  if (params?.search) query.set('search', params.search);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.limit) query.set('limit', String(params.limit ?? 20));
+  if (params?.region) query.set('region', params.region);
+  const { data } = await api.get(`/api/knowledge/markets?${query.toString()}`);
   return data;
 };
 
-const fetchCompetitors = async (): Promise<{ items: CompetitorItem[]; total: number }> => {
-  const { data } = await api.get('/api/knowledge/competitors');
+const fetchCompetitors = async (params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+  threatLevel?: string;
+}): Promise<{ items: CompetitorItem[]; total: number; page: number; limit: number }> => {
+  const query = new URLSearchParams();
+  if (params?.search) query.set('search', params.search);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.limit) query.set('limit', String(params.limit ?? 20));
+  if (params?.threatLevel) query.set('threatLevel', params.threatLevel);
+  const { data } = await api.get(`/api/knowledge/competitors?${query.toString()}`);
   return data;
 };
 
@@ -566,10 +593,18 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
       await api.post(`/api/knowledge/${entityType}/${entityId}/links`, {
         ...linkForm,
         dataYear: linkForm.dataYear ? parseInt(linkForm.dataYear) : undefined,
-        tags: linkForm.tags ? linkForm.tags.split(',').map(t => t.trim()) : [],
+        tags: linkForm.tags ? linkForm.tags.split(',').map((t) => t.trim()) : [],
       });
       setShowAddModal(false);
-      setLinkForm({ externalUrl: '', sourceType: 'external_url', mediaType: 'document', title: '', category: 'other', dataYear: '', tags: '' });
+      setLinkForm({
+        externalUrl: '',
+        sourceType: 'external_url',
+        mediaType: 'document',
+        title: '',
+        category: 'other',
+        dataYear: '',
+        tags: '',
+      });
       loadAttachments();
     } catch (e) {
       console.error(e);
@@ -620,10 +655,10 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
     }
   };
 
-  const photos = attachments.filter(a => a.mediaType === 'photo');
-  const videos = attachments.filter(a => a.mediaType === 'video');
-  const documents = attachments.filter(a =>
-    a.mediaType === 'document' || a.mediaType === 'archive' || a.mediaType === 'cad'
+  const photos = attachments.filter((a) => a.mediaType === 'photo');
+  const videos = attachments.filter((a) => a.mediaType === 'video');
+  const documents = attachments.filter(
+    (a) => a.mediaType === 'document' || a.mediaType === 'archive' || a.mediaType === 'cad'
   );
 
   return (
@@ -635,26 +670,37 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
             { label: `Фото (${photos.length})`, count: photos.length },
             { label: `Видео (${videos.length})`, count: videos.length },
             { label: `Документы (${documents.length})`, count: documents.length },
-          ].map(tab => (
-            <span key={tab.label} className={`text-xs font-semibold ${tab.count > 0 ? 'text-blue-400' : 'text-slate-500'}`}>
+          ].map((tab) => (
+            <span
+              key={tab.label}
+              className={`text-xs font-semibold ${tab.count > 0 ? 'text-blue-400' : 'text-slate-500'}`}
+            >
               {tab.label}
             </span>
           ))}
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => { setShowAddModal(true); setAddType('link'); }}
+            onClick={() => {
+              setShowAddModal(true);
+              setAddType('link');
+            }}
             className="px-3 py-1.5 text-xs bg-blue-700 text-white rounded hover:bg-blue-600"
           >
             + Ссылка
           </button>
           <button
-            onClick={() => { setShowAddModal(true); setAddType('upload'); }}
+            onClick={() => {
+              setShowAddModal(true);
+              setAddType('upload');
+            }}
             className="px-3 py-1.5 text-xs bg-emerald-700 text-white rounded hover:bg-emerald-600"
           >
             + Файл
           </button>
-          <button onClick={onClose} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">✕</button>
+          <button onClick={onClose} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">
+            ✕
+          </button>
         </div>
       </div>
 
@@ -667,31 +713,62 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {attachments.map(att => {
+          {attachments.map((att) => {
             const expired = isExpired(att.validUntil);
             const expiringSoon = isExpiringSoon(att.validUntil);
             return (
-              <div key={att.id} className={`flex items-center gap-3 p-2 rounded ${expired ? 'bg-red-950/30 border border-red-900' : expiringSoon ? 'bg-amber-950/30 border border-amber-900' : 'bg-slate-800 border border-slate-700'}`}>
-                <span className="text-lg">{att.sourceType === 'upload' ? getMediaTypeIcon(att.mediaType) : getProviderIcon(att.linkProvider)}</span>
+              <div
+                key={att.id}
+                className={`flex items-center gap-3 p-2 rounded ${expired ? 'bg-red-950/30 border border-red-900' : expiringSoon ? 'bg-amber-950/30 border border-amber-900' : 'bg-slate-800 border border-slate-700'}`}
+              >
+                <span className="text-lg">
+                  {att.sourceType === 'upload'
+                    ? getMediaTypeIcon(att.mediaType)
+                    : getProviderIcon(att.linkProvider)}
+                </span>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold text-slate-100 truncate">{att.title}</div>
                   <div className="text-xs text-slate-500 flex gap-2 mt-0.5">
                     <span>{getCategoryName(att.category)}</span>
                     {att.dataYear && <span>{att.dataYear} г.</span>}
                     {att.fileSize && <span>{formatFileSize(att.fileSize)}</span>}
-                    {att.tags && att.tags.length > 0 && <span>{att.tags.slice(0, 3).join(', ')}</span>}
+                    {att.tags && att.tags.length > 0 && (
+                      <span>{att.tags.slice(0, 3).join(', ')}</span>
+                    )}
                   </div>
                 </div>
-                {expired && <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">Истёк</span>}
-                {expiringSoon && !expired && <span className="text-xs bg-amber-900 text-amber-300 px-2 py-0.5 rounded-full">Скоро истечёт</span>}
+                {expired && (
+                  <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">
+                    Истёк
+                  </span>
+                )}
+                {expiringSoon && !expired && (
+                  <span className="text-xs bg-amber-900 text-amber-300 px-2 py-0.5 rounded-full">
+                    Скоро истечёт
+                  </span>
+                )}
                 <span className="text-xs text-slate-500">
-                  {att.sourceType === 'upload' ? 'Локально' : att.sourceType === 'folder_link' ? 'Папка' : att.sourceType === 'file_link' ? 'Файл' : 'URL'}
+                  {att.sourceType === 'upload'
+                    ? 'Локально'
+                    : att.sourceType === 'folder_link'
+                      ? 'Папка'
+                      : att.sourceType === 'file_link'
+                        ? 'Файл'
+                        : 'URL'}
                 </span>
                 <div className="flex gap-1">
-                  <button onClick={() => openMedia(att)} className="px-2 py-1 text-xs border border-blue-700 text-blue-400 rounded hover:bg-blue-900/30">
+                  <button
+                    onClick={() => openMedia(att)}
+                    className="px-2 py-1 text-xs border border-blue-700 text-blue-400 rounded hover:bg-blue-900/30"
+                  >
                     {att.linkProvider === 'network_path' ? 'Копировать' : 'Открыть'}
                   </button>
-                  <button onClick={() => handleDelete(att.id)} className="px-2 py-1 text-xs border border-red-800 text-red-400 rounded hover:bg-red-900/30">🗑</button>
+                  <button
+                    onClick={() => handleDelete(att.id)}
+                    className="px-2 py-1 text-xs border border-red-800 text-red-400 rounded hover:bg-red-900/30"
+                  >
+                    🗑
+                  </button>
                 </div>
               </div>
             );
@@ -704,44 +781,80 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <div className="bg-slate-800 rounded-lg p-5 w-[520px] border border-slate-600">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-bold text-white">{addType === 'link' ? 'Добавить ссылку' : 'Загрузить файл'}</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white text-xl">×</button>
+              <h3 className="text-base font-bold text-white">
+                {addType === 'link' ? 'Добавить ссылку' : 'Загрузить файл'}
+              </h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-white text-xl"
+              >
+                ×
+              </button>
             </div>
 
             {addType === 'link' ? (
               <div className="flex flex-col gap-3">
                 <div>
-                  <label className="text-xs text-slate-500 uppercase block mb-1">Тип источника</label>
+                  <label className="text-xs text-slate-500 uppercase block mb-1">
+                    Тип источника
+                  </label>
                   <div className="grid grid-cols-3 gap-2">
                     {[
                       { value: 'external_url', label: 'URL / YouTube' },
                       { value: 'file_link', label: 'Ссылка на файл' },
                       { value: 'folder_link', label: 'Ссылка на папку' },
-                    ].map(opt => (
-                      <button key={opt.value} onClick={() => setLinkForm({ ...linkForm, sourceType: opt.value as 'external_url' | 'file_link' | 'folder_link' })}
-                        className={`py-2 text-xs rounded border ${linkForm.sourceType === opt.value ? 'border-blue-500 bg-blue-900/30 text-white' : 'border-slate-600 text-slate-300'}`}>
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() =>
+                          setLinkForm({
+                            ...linkForm,
+                            sourceType: opt.value as 'external_url' | 'file_link' | 'folder_link',
+                          })
+                        }
+                        className={`py-2 text-xs rounded border ${linkForm.sourceType === opt.value ? 'border-blue-500 bg-blue-900/30 text-white' : 'border-slate-600 text-slate-300'}`}
+                      >
                         {opt.label}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 uppercase block mb-1">{linkForm.sourceType === 'folder_link' ? 'Путь к папке *' : 'URL / Путь *'}</label>
-                  <input type="text" value={linkForm.externalUrl} onChange={e => setLinkForm({ ...linkForm, externalUrl: e.target.value })}
-                    placeholder={linkForm.sourceType === 'folder_link' ? '\\\\server\\docs\\FM-3000\\' : linkForm.sourceType === 'file_link' ? 'http://nas.local/video.mp4' : 'https://youtube.com/watch?v=...'}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+                  <label className="text-xs text-slate-500 uppercase block mb-1">
+                    {linkForm.sourceType === 'folder_link' ? 'Путь к папке *' : 'URL / Путь *'}
+                  </label>
+                  <input
+                    type="text"
+                    value={linkForm.externalUrl}
+                    onChange={(e) => setLinkForm({ ...linkForm, externalUrl: e.target.value })}
+                    placeholder={
+                      linkForm.sourceType === 'folder_link'
+                        ? '\\\\server\\docs\\FM-3000\\'
+                        : linkForm.sourceType === 'file_link'
+                          ? 'http://nas.local/video.mp4'
+                          : 'https://youtube.com/watch?v=...'
+                    }
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+                  />
                 </div>
                 <div>
                   <label className="text-xs text-slate-500 uppercase block mb-1">Название *</label>
-                  <input type="text" value={linkForm.title} onChange={e => setLinkForm({ ...linkForm, title: e.target.value })}
+                  <input
+                    type="text"
+                    value={linkForm.title}
+                    onChange={(e) => setLinkForm({ ...linkForm, title: e.target.value })}
                     placeholder="Демонстрация работы FM-3000"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-slate-500 uppercase block mb-1">Тип</label>
-                    <select value={linkForm.mediaType} onChange={e => setLinkForm({ ...linkForm, mediaType: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm">
+                    <select
+                      value={linkForm.mediaType}
+                      onChange={(e) => setLinkForm({ ...linkForm, mediaType: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+                    >
                       <option value="document">Документ</option>
                       <option value="video">Видео</option>
                       <option value="photo">Фото</option>
@@ -751,44 +864,97 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
                   </div>
                   <div>
                     <label className="text-xs text-slate-500 uppercase block mb-1">Категория</label>
-                    <select value={linkForm.category} onChange={e => setLinkForm({ ...linkForm, category: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm">
-                      {(categories || DEFAULT_CATEGORIES).map(cat => (
-                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    <select
+                      value={linkForm.category}
+                      onChange={(e) => setLinkForm({ ...linkForm, category: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+                    >
+                      {(categories || DEFAULT_CATEGORIES).map((cat) => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
                       ))}
                     </select>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-slate-500 uppercase block mb-1">Год данных</label>
-                    <input type="number" value={linkForm.dataYear} onChange={e => setLinkForm({ ...linkForm, dataYear: e.target.value })}
-                      placeholder="2024" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+                    <label className="text-xs text-slate-500 uppercase block mb-1">
+                      Год данных
+                    </label>
+                    <input
+                      type="number"
+                      value={linkForm.dataYear}
+                      onChange={(e) => setLinkForm({ ...linkForm, dataYear: e.target.value })}
+                      placeholder="2024"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+                    />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-500 uppercase block mb-1">Теги (через запятую)</label>
-                    <input type="text" value={linkForm.tags} onChange={e => setLinkForm({ ...linkForm, tags: e.target.value })}
-                      placeholder="демо, FM-3000" className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm" />
+                    <label className="text-xs text-slate-500 uppercase block mb-1">
+                      Теги (через запятую)
+                    </label>
+                    <input
+                      type="text"
+                      value={linkForm.tags}
+                      onChange={(e) => setLinkForm({ ...linkForm, tags: e.target.value })}
+                      placeholder="демо, FM-3000"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-white text-sm"
+                    />
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end mt-2">
-                  <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Отмена</button>
-                  <button onClick={handleAddLink} disabled={!linkForm.externalUrl || !linkForm.title}
-                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded disabled:opacity-50">Прикрепить</button>
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 text-sm text-slate-400 hover:text-white"
+                  >
+                    Отмена
+                  </button>
+                  <button
+                    onClick={handleAddLink}
+                    disabled={!linkForm.externalUrl || !linkForm.title}
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded disabled:opacity-50"
+                  >
+                    Прикрепить
+                  </button>
                 </div>
               </div>
             ) : (
               <div>
-                <div onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) handleUploadFile(file); }}
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleUploadFile(file);
+                  }}
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-600 rounded-lg p-10 text-center cursor-pointer hover:border-slate-400">
-                  <input ref={fileInputRef} type="file" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) handleUploadFile(file); }} />
+                  className="border-2 border-dashed border-slate-600 rounded-lg p-10 text-center cursor-pointer hover:border-slate-400"
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadFile(file);
+                    }}
+                  />
                   <div className="text-4xl mb-3">📎</div>
-                  <div className="text-sm text-white mb-2">Перетащите файл или нажмите для выбора</div>
-                  <div className="text-xs text-slate-500">PDF, Word, Excel, фото, архивы, чертежи (до 50МБ)</div>
+                  <div className="text-sm text-white mb-2">
+                    Перетащите файл или нажмите для выбора
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    PDF, Word, Excel, фото, архивы, чертежи (до 50МБ)
+                  </div>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <button onClick={() => setShowAddModal(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white">Отмена</button>
+                  <button
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 text-sm text-slate-400 hover:text-white"
+                  >
+                    Отмена
+                  </button>
                 </div>
               </div>
             )}
@@ -804,9 +970,15 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
 // ==========================================
 
 const EquipmentTab = () => {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [category, setCategory] = useState('');
+  const LIMIT = 20;
+
   const { data, isLoading } = useQuery({
-    queryKey: ['knowledge', 'equipment'],
-    queryFn: () => fetchEquipment(),
+    queryKey: ['knowledge', 'equipment', page, search, category],
+    queryFn: () => fetchEquipment({ page, search, category, limit: LIMIT }),
     refetchOnMount: 'always',
     staleTime: 0,
     retry: 3,
@@ -856,6 +1028,27 @@ const EquipmentTab = () => {
     }
   };
 
+  // Calculate pagination
+  const totalPages = Math.ceil((data?.total || 0) / LIMIT);
+  const startItem = (page - 1) * LIMIT + 1;
+  const endItem = Math.min(page * LIMIT, data?.total || 0);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else if (page <= 3) {
+      for (let i = 1; i <= 5; i++) pages.push(i);
+    } else if (page >= totalPages - 2) {
+      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+    } else {
+      for (let i = page - 2; i <= page + 2; i++) pages.push(i);
+    }
+    return pages;
+  };
+
   if (isLoading) {
     return <div className="text-center py-8">Загрузка...</div>;
   }
@@ -880,6 +1073,86 @@ const EquipmentTab = () => {
             Добавить оборудование
           </button>
         </div>
+
+        {/* Search and Filter */}
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[280px] max-w-[320px]">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearch(searchInput);
+                  setPage(1);
+                }
+              }}
+              placeholder="Поиск по названию или коду..."
+              className="w-full pl-9 pr-8 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+              🔍
+            </span>
+            {searchInput && (
+              <button
+                onClick={() => {
+                  setSearchInput('');
+                  setSearch('');
+                  setPage(1);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-lg"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {/* Category Filter */}
+          <select
+            value={category}
+            onChange={(e) => {
+              setCategory(e.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-blue-500"
+          >
+            <option value="">Все категории</option>
+            <option value="MECHANICAL">Механическое</option>
+            <option value="ELECTRICAL">Электрическое</option>
+            <option value="THERMAL">Тепловое</option>
+            <option value="HYDRAULIC">Гидравлическое</option>
+            <option value="AUTOMATION">Автоматизация</option>
+            <option value="OTHER">Прочее</option>
+          </select>
+
+          {/* Search Button */}
+          <button
+            onClick={() => {
+              setSearch(searchInput);
+              setPage(1);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Найти
+          </button>
+
+          {/* Clear filters */}
+          {(search || category) && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setSearchInput('');
+                setCategory('');
+                setPage(1);
+              }}
+              className="px-3 py-2 text-slate-400 hover:text-slate-200 text-sm"
+            >
+              Сбросить
+            </button>
+          )}
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -911,90 +1184,157 @@ const EquipmentTab = () => {
               {data?.items?.map((item) => (
                 <React.Fragment key={item.id}>
                   <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                    {item.code}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {item.name}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {getCategoryLabel(item.category)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {formatCurrency(item.basePrice, item.currency)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {item.leadTimeDays ? `${item.leadTimeDays} дн.` : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.isActive ? (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Активно
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                      {item.code}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {item.name}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {getCategoryLabel(item.category)}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        Неактивно
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold shadow-sm ${
-                          expandedId === item.id
-                            ? 'bg-emerald-500 text-white shadow-emerald-500/30'
-                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
-                        }`}
-                        title={expandedId === item.id ? 'Скрыть медиа' : 'Показать медиа'}
-                      >
-                        <Paperclip className="w-4 h-4" />
-                        <span>Медиа</span>
-                      </button>
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
-                        title="Редактировать"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deleteMutation.isPending}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          deleteConfirmId === item.id
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900/30'
-                            : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600'
-                        }`}
-                        title={
-                          deleteConfirmId === item.id
-                            ? 'Нажмите еще раз для подтверждения'
-                            : 'Удалить'
-                        }
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {expandedId === item.id && (
-                  <tr>
-                    <td colSpan={7} className="p-0">
-                      <MediaPanel
-                        entityType="equipment"
-                        entityId={item.id}
-                        onClose={() => setExpandedId(null)}
-                      />
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {formatCurrency(item.basePrice, item.currency)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {item.leadTimeDays ? `${item.leadTimeDays} дн.` : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {item.isActive ? (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Активно
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Неактивно
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold shadow-sm ${
+                            expandedId === item.id
+                              ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                          }`}
+                          title={expandedId === item.id ? 'Скрыть медиа' : 'Показать медиа'}
+                        >
+                          <Paperclip className="w-4 h-4" />
+                          <span>Медиа</span>
+                        </button>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
+                          title="Редактировать"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deleteMutation.isPending}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            deleteConfirmId === item.id
+                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30'
+                              : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600'
+                          }`}
+                          title={
+                            deleteConfirmId === item.id
+                              ? 'Нажмите еще раз для подтверждения'
+                              : 'Удалить'
+                          }
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                )}
+                  {expandedId === item.id && (
+                    <tr>
+                      <td colSpan={7} className="p-0">
+                        <MediaPanel
+                          entityType="equipment"
+                          entityId={item.id}
+                          onClose={() => setExpandedId(null)}
+                        />
+                      </td>
+                    </tr>
+                  )}
                 </React.Fragment>
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {data && data.total > LIMIT && (
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
+            {/* Info */}
+            <div className="text-sm text-slate-400">
+              Показано {startItem}-{endItem} из {data.total}
+            </div>
+
+            {/* Page buttons */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+                title="Первая страница"
+              >
+                |«
+              </button>
+              <button
+                onClick={() => setPage((p) => p - 1)}
+                disabled={page === 1}
+                className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+              >
+                Назад
+              </button>
+
+              {getPageNumbers().map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-1 rounded border text-sm min-w-[32px] ${
+                    page === pageNum
+                      ? 'border-blue-500 bg-blue-600 text-white'
+                      : 'border-slate-700 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages}
+                className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+              >
+                Вперёд
+              </button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={page >= totalPages}
+                className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+                title="Последняя страница"
+              >
+                »|
+              </button>
+            </div>
+
+            {/* Page size selector */}
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <span>На странице:</span>
+              <span className="px-2 py-1 rounded border border-slate-700 text-slate-300">
+                {LIMIT}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <EquipmentModal
@@ -1068,9 +1408,15 @@ const getPriorityBadge = (priority: number) => {
 };
 
 const MarketsTab = () => {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [region, setRegion] = useState('');
+  const LIMIT = 20;
+
   const { data, isLoading } = useQuery({
-    queryKey: ['knowledge', 'markets'],
-    queryFn: fetchMarkets,
+    queryKey: ['knowledge', 'markets', page, search, region],
+    queryFn: () => fetchMarkets({ page, search, region, limit: LIMIT }),
     refetchOnMount: 'always',
     staleTime: 0,
   });
@@ -1121,7 +1467,7 @@ const MarketsTab = () => {
     }
   };
 
-  // Фильтрация и сортировка
+  // Client-side filtering by status (since backend doesn't support it directly)
   const filteredItems =
     data?.items
       ?.filter((item: MarketItem) => {
@@ -1132,6 +1478,27 @@ const MarketsTab = () => {
         return true;
       })
       .sort((a: MarketItem, b: MarketItem) => b.priority - a.priority) || [];
+
+  // Calculate pagination
+  const totalPages = Math.ceil((data?.total || 0) / LIMIT);
+  const startItem = (page - 1) * LIMIT + 1;
+  const endItem = Math.min(page * LIMIT, data?.total || 0);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else if (page <= 3) {
+      for (let i = 1; i <= 5; i++) pages.push(i);
+    } else if (page >= totalPages - 2) {
+      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+    } else {
+      for (let i = page - 2; i <= page + 2; i++) pages.push(i);
+    }
+    return pages;
+  };
 
   if (isLoading) {
     return <div className="text-center py-8">Загрузка...</div>;
@@ -1170,6 +1537,85 @@ const MarketsTab = () => {
                 Добавить рынок
               </button>
             </div>
+          </div>
+
+          {/* Search and Filter */}
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 min-w-[200px] max-w-[280px]">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setSearch(searchInput);
+                    setPage(1);
+                  }
+                }}
+                placeholder="Поиск по стране..."
+                className="w-full pl-9 pr-8 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                🔍
+              </span>
+              {searchInput && (
+                <button
+                  onClick={() => {
+                    setSearchInput('');
+                    setSearch('');
+                    setPage(1);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-lg"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* Region Filter */}
+            <select
+              value={region}
+              onChange={(e) => {
+                setRegion(e.target.value);
+                setPage(1);
+              }}
+              className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Все регионы</option>
+              <option value="EUROPE">Европа</option>
+              <option value="ASIA">Азия</option>
+              <option value="NORTH_AMERICA">Северная Америка</option>
+              <option value="SOUTH_AMERICA">Южная Америка</option>
+              <option value="AFRICA">Африка</option>
+              <option value="MIDDLE_EAST">Ближний Восток</option>
+            </select>
+
+            {/* Search Button */}
+            <button
+              onClick={() => {
+                setSearch(searchInput);
+                setPage(1);
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Найти
+            </button>
+
+            {/* Clear filters */}
+            {(search || region) && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setSearchInput('');
+                  setRegion('');
+                  setPage(1);
+                }}
+                className="px-3 py-2 text-slate-400 hover:text-slate-200 text-sm"
+              >
+                Сбросить
+              </button>
+            )}
           </div>
         </div>
 
@@ -1210,91 +1656,91 @@ const MarketsTab = () => {
                   return (
                     <React.Fragment key={item.id}>
                       <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {getFlagImg(item.code)}
-                          {item.name}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                        {item.industry || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                        {item.companiesCount?.toLocaleString() || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                        {item.productionVolumeTons
-                          ? `${(item.productionVolumeTons / 1000).toFixed(0)}K`
-                          : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                        {item.meatConsumptionKgPerCapita || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}
-                        >
-                          {badge.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                        {item.dataYear || '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold shadow-sm ${
-                              expandedId === item.id
-                                ? 'bg-emerald-500 text-white shadow-emerald-500/30'
-                                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
-                            }`}
-                            title={expandedId === item.id ? 'Скрыть медиа' : 'Показать медиа'}
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {getFlagImg(item.code)}
+                            {item.name}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                          {item.industry || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                          {item.companiesCount?.toLocaleString() || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                          {item.productionVolumeTons
+                            ? `${(item.productionVolumeTons / 1000).toFixed(0)}K`
+                            : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                          {item.meatConsumptionKgPerCapita || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}
                           >
-                            <Paperclip className="w-3.5 h-3.5" />
-                            <span>Медиа</span>
-                          </button>
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
-                            title="Редактировать"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            disabled={deleteMutation.isPending}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              deleteConfirmId === item.id
-                                ? 'bg-red-100 text-red-700 dark:bg-red-900/30'
-                                : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600'
-                            }`}
-                            title={deleteConfirmId === item.id ? 'Нажмите ещё раз' : 'Удалить'}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {expandedId === item.id && (
-                      <tr>
-                        <td colSpan={8} style={{ padding: 0 }}>
-                          <MediaPanel
-                            entityType="market"
-                            entityId={item.id}
-                            onClose={() => setExpandedId(null)}
-                            categories={[
-                              { value: 'report', label: 'Отчёт по рынку' },
-                              { value: 'statistics', label: 'Статистика' },
-                              { value: 'distributor_contacts', label: 'Контакты дистрибьюторов' },
-                              { value: 'meeting_notes', label: 'Протокол переговоров' },
-                              { value: 'commercial_offer', label: 'КП конкурента на рынке' },
-                              { value: 'other', label: 'Другое' },
-                            ]}
-                          />
+                            {badge.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                          {item.dataYear || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold shadow-sm ${
+                                expandedId === item.id
+                                  ? 'bg-emerald-500 text-white shadow-emerald-500/30'
+                                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                              }`}
+                              title={expandedId === item.id ? 'Скрыть медиа' : 'Показать медиа'}
+                            >
+                              <Paperclip className="w-3.5 h-3.5" />
+                              <span>Медиа</span>
+                            </button>
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 rounded-lg transition-colors"
+                              title="Редактировать"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              disabled={deleteMutation.isPending}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                deleteConfirmId === item.id
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-900/30'
+                                  : 'hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600'
+                              }`}
+                              title={deleteConfirmId === item.id ? 'Нажмите ещё раз' : 'Удалить'}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    )}
+                      {expandedId === item.id && (
+                        <tr>
+                          <td colSpan={8} style={{ padding: 0 }}>
+                            <MediaPanel
+                              entityType="market"
+                              entityId={item.id}
+                              onClose={() => setExpandedId(null)}
+                              categories={[
+                                { value: 'report', label: 'Отчёт по рынку' },
+                                { value: 'statistics', label: 'Статистика' },
+                                { value: 'distributor_contacts', label: 'Контакты дистрибьюторов' },
+                                { value: 'meeting_notes', label: 'Протокол переговоров' },
+                                { value: 'commercial_offer', label: 'КП конкурента на рынке' },
+                                { value: 'other', label: 'Другое' },
+                              ]}
+                            />
+                          </td>
+                        </tr>
+                      )}
                     </React.Fragment>
                   );
                 })}
@@ -1321,6 +1767,73 @@ const MarketsTab = () => {
             </button>
           </div>
         )}
+
+        {/* Pagination */}
+        {data && data.total > LIMIT && (
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-wrap items-center justify-between gap-3">
+            {/* Info */}
+            <div className="text-sm text-slate-400">
+              Показано {startItem}-{endItem} из {data.total}
+            </div>
+
+            {/* Page buttons */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+                title="Первая страница"
+              >
+                |«
+              </button>
+              <button
+                onClick={() => setPage((p) => p - 1)}
+                disabled={page === 1}
+                className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+              >
+                Назад
+              </button>
+
+              {getPageNumbers().map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-3 py-1 rounded border text-sm min-w-[32px] ${
+                    page === pageNum
+                      ? 'border-blue-500 bg-blue-600 text-white'
+                      : 'border-slate-700 text-slate-400 hover:bg-slate-800'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages}
+                className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+              >
+                Вперёд
+              </button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={page >= totalPages}
+                className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+                title="Последняя страница"
+              >
+                »|
+              </button>
+            </div>
+
+            {/* Page size selector */}
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <span>На странице:</span>
+              <span className="px-2 py-1 rounded border border-slate-700 text-slate-300">
+                {LIMIT}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <MarketModal
@@ -1338,9 +1851,15 @@ const MarketsTab = () => {
 // ==========================================
 
 const CompetitorsTab = () => {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [threatLevel, setThreatLevel] = useState('');
+  const LIMIT = 20;
+
   const { data, isLoading } = useQuery({
-    queryKey: ['knowledge', 'competitors'],
-    queryFn: fetchCompetitors,
+    queryKey: ['knowledge', 'competitors', page, search, threatLevel],
+    queryFn: () => fetchCompetitors({ page, search, threatLevel, limit: LIMIT }),
     refetchOnMount: 'always',
     staleTime: 0,
   });
@@ -1382,7 +1901,7 @@ const CompetitorsTab = () => {
     }
   };
 
-  // Фильтрация и сортировка
+  // Client-side filtering by threat level (if server filtering is not used)
   const filteredItems = data?.items
     ?.filter((item: CompetitorItem) => {
       if (filterThreat === 'all') return true;
@@ -1390,8 +1909,31 @@ const CompetitorsTab = () => {
     })
     .sort((a: CompetitorItem, b: CompetitorItem) => {
       const order = { high: 0, medium: 1, low: 2 };
-      return order[a.threatLevel as keyof typeof order] - order[b.threatLevel as keyof typeof order];
+      return (
+        order[a.threatLevel as keyof typeof order] - order[b.threatLevel as keyof typeof order]
+      );
     });
+
+  // Calculate pagination
+  const totalPages = Math.ceil((data?.total || 0) / LIMIT);
+  const startItem = (page - 1) * LIMIT + 1;
+  const endItem = Math.min(page * LIMIT, data?.total || 0);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else if (page <= 3) {
+      for (let i = 1; i <= 5; i++) pages.push(i);
+    } else if (page >= totalPages - 2) {
+      for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+    } else {
+      for (let i = page - 2; i <= page + 2; i++) pages.push(i);
+    }
+    return pages;
+  };
 
   if (isLoading) {
     return <div className="text-center py-8">Загрузка...</div>;
@@ -1407,16 +1949,21 @@ const CompetitorsTab = () => {
         height="18"
         alt={code}
         className="inline-block rounded"
-        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
       />
     );
   };
 
   const getPriceSegmentLabel = (segment: string) => {
     switch (segment) {
-      case 'low': return 'Эконом';
-      case 'premium': return 'Премиум';
-      default: return 'Средний';
+      case 'low':
+        return 'Эконом';
+      case 'premium':
+        return 'Премиум';
+      default:
+        return 'Средний';
     }
   };
 
@@ -1450,9 +1997,7 @@ const CompetitorsTab = () => {
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             Конкурентов пока нет
           </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            Добавьте известных игроков рынка
-          </p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">Добавьте известных игроков рынка</p>
           <button
             onClick={handleAdd}
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -1474,21 +2019,76 @@ const CompetitorsTab = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative w-[220px]">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearch(searchInput);
+                  setPage(1);
+                }
+              }}
+              placeholder="Поиск конкурента..."
+              className="w-full pl-9 pr-8 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-500"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+              🔍
+            </span>
+            {searchInput && (
+              <button
+                onClick={() => {
+                  setSearchInput('');
+                  setSearch('');
+                  setPage(1);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-lg"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
           <select
             value={filterThreat}
             onChange={(e) => setFilterThreat(e.target.value as typeof filterThreat)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 text-sm focus:outline-none focus:border-blue-500"
           >
             <option value="all">Все уровни угрозы</option>
             <option value="high">Высокая</option>
             <option value="medium">Средняя</option>
             <option value="low">Низкая</option>
           </select>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Всего: {filteredItems.length}
-          </span>
+
+          <button
+            onClick={() => {
+              setSearch(searchInput);
+              setPage(1);
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Найти
+          </button>
+
+          {(search || threatLevel) && (
+            <button
+              onClick={() => {
+                setSearch('');
+                setSearchInput('');
+                setThreatLevel('');
+                setPage(1);
+              }}
+              className="px-3 py-2 text-slate-400 hover:text-slate-200 text-sm"
+            >
+              Сбросить
+            </button>
+          )}
+
+          <span className="text-sm text-slate-400">Всего: {data?.total || 0}</span>
         </div>
         <button
           onClick={handleAdd}
@@ -1537,12 +2137,8 @@ const CompetitorsTab = () => {
                   {item.website.replace(/^https?:\/\//, '')}
                 </a>
               )}
-              {item.foundedYear && (
-                <span>С {item.foundedYear} г.</span>
-              )}
-              {item.employeesCount && (
-                <span>{item.employeesCount} сотр.</span>
-              )}
+              {item.foundedYear && <span>С {item.foundedYear} г.</span>}
+              {item.employeesCount && <span>{item.employeesCount} сотр.</span>}
             </div>
 
             {/* Сегмент */}
@@ -1556,7 +2152,9 @@ const CompetitorsTab = () => {
             {/* Сильные стороны */}
             {item.strengths && item.strengths.length > 0 && (
               <div className="mb-3">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Сильные стороны:</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Сильные стороны:
+                </p>
                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
                   {item.strengths.slice(0, 3).map((s, i) => (
                     <li key={i} className="flex items-start gap-1">
@@ -1574,7 +2172,9 @@ const CompetitorsTab = () => {
             {/* Слабые стороны */}
             {item.weaknesses && item.weaknesses.length > 0 && (
               <div className="mb-3">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Слабые стороны:</p>
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Слабые стороны:
+                </p>
                 <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-0.5">
                   {item.weaknesses.slice(0, 2).map((w, i) => (
                     <li key={i} className="flex items-start gap-1">
@@ -1648,6 +2248,73 @@ const CompetitorsTab = () => {
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {data && data.total > LIMIT && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          {/* Info */}
+          <div className="text-sm text-slate-400">
+            Показано {startItem}-{endItem} из {data.total}
+          </div>
+
+          {/* Page buttons */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(1)}
+              disabled={page === 1}
+              className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+              title="Первая страница"
+            >
+              |«
+            </button>
+            <button
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page === 1}
+              className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+            >
+              Назад
+            </button>
+
+            {getPageNumbers().map((pageNum) => (
+              <button
+                key={pageNum}
+                onClick={() => setPage(pageNum)}
+                className={`px-3 py-1 rounded border text-sm min-w-[32px] ${
+                  page === pageNum
+                    ? 'border-blue-500 bg-blue-600 text-white'
+                    : 'border-slate-700 text-slate-400 hover:bg-slate-800'
+                }`}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= totalPages}
+              className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+            >
+              Вперёд
+            </button>
+            <button
+              onClick={() => setPage(totalPages)}
+              disabled={page >= totalPages}
+              className="px-2 py-1 rounded border border-slate-700 text-slate-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+              title="Последняя страница"
+            >
+              »|
+            </button>
+          </div>
+
+          {/* Page size selector */}
+          <div className="flex items-center gap-2 text-sm text-slate-400">
+            <span>На странице:</span>
+            <span className="px-2 py-1 rounded border border-slate-700 text-slate-300">
+              {LIMIT}
+            </span>
+          </div>
+        </div>
+      )}
 
       <CompetitorModal
         isOpen={isModalOpen}
