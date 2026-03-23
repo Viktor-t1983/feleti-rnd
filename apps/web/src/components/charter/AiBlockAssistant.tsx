@@ -39,6 +39,20 @@ export function AiBlockAssistant({
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const processedResponses = useRef<Set<string>>(new Set());
+
+  // Синхронизация с внешней историей (предотвращает дублирование)
+  useEffect(() => {
+    if (history.length > 0) {
+      // Проверяем, отличается ли history от текущих messages
+      const historyStr = JSON.stringify(history.map(m => ({ role: m.role, content: m.content })));
+      const messagesStr = JSON.stringify(messages.map(m => ({ role: m.role, content: m.content })));
+      
+      if (historyStr !== messagesStr) {
+        setMessages(history);
+      }
+    }
+  }, [history]);
 
   // Скролл вниз при новых сообщениях
   useEffect(() => {
@@ -73,6 +87,13 @@ export function AiBlockAssistant({
       });
 
       if (data.success) {
+        // Проверяем, не добавлено ли это сообщение уже
+        const responseId = data.data.text.slice(0, 100);
+        if (processedResponses.current.has(responseId)) {
+          return;
+        }
+        processedResponses.current.add(responseId);
+        
         setMessages((prev) => [
           ...prev,
           {
