@@ -81,6 +81,24 @@ export function AiBlockAssistant({
     if (!userMessage || isProcessingRef.current || isLoading) return;
     if (lastSentMessageRef.current === userMessage) return;
     
+    // Проверяем sessionStorage - не отправляли ли мы уже это сообщение
+    const storageKey = `ai_sent_${blockId}_${userMessage.slice(0, 50)}`;
+    if (sessionStorage.getItem(storageKey)) {
+      return;
+    }
+    sessionStorage.setItem(storageKey, Date.now().toString());
+    
+    // Очищаем старые ключи (старше 5 минут)
+    const now = Date.now();
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('ai_sent_')) {
+        const time = parseInt(sessionStorage.getItem(key) || '0');
+        if (now - time > 5 * 60 * 1000) {
+          sessionStorage.removeItem(key);
+        }
+      }
+    });
+    
     // Отменяем предыдущий запрос если есть
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
