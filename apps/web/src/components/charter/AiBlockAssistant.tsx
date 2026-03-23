@@ -39,14 +39,17 @@ export function AiBlockAssistant({
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const processedResponses = useRef<Set<string>>(new Set());
+  
+  // Refs для предотвращения дублирования
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const lastSentMessageRef = useRef<string>('');
+  const isProcessingRef = useRef(false);
 
   // Синхронизация с внешней историей (предотвращает дублирование)
   useEffect(() => {
     if (history.length > 0) {
-      // Проверяем, отличается ли history от текущих messages
-      const historyStr = JSON.stringify(history.map(m => ({ role: m.role, content: m.content })));
-      const messagesStr = JSON.stringify(messages.map(m => ({ role: m.role, content: m.content })));
+      const historyStr = JSON.stringify(history.map(m => ({ role: m.role, content: m.content.slice(0, 50) })));
+      const messagesStr = JSON.stringify(messages.map(m => ({ role: m.role, content: m.content.slice(0, 50) })));
       
       if (historyStr !== messagesStr) {
         setMessages(history);
@@ -64,54 +67,79 @@ export function AiBlockAssistant({
     onHistoryUpdate?.(messages);
   }, [messages, onHistoryUpdate]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  // Очистка при размонтировании
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
+  const sendMessage = async () => {
     const userMessage = input.trim();
+    
+    // Строгая проверка на дублирование
+    if (!userMessage || isProcessingRef.current || isLoading) return;
+    if (lastSentMessageRef.current === userMessage) return;
+    
+    // Отменяем предыдущий запрос если есть
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = new AbortController();
+
+    isProcessingRef.current = true;
+    lastSentMessageRef.current = userMessage;
     setInput('');
     setIsLoading(true);
 
-    // Добавляем сообщение пользователя
-    const newMessages: Message[] = [
-      ...messages,
-      { role: 'user', content: userMessage, timestamp: new Date().toISOString() },
-    ];
-    setMessages(newMessages);
+    // Добавляем сообщение пользователя локально
+    const userMsg: Message = { 
+      role: 'user', 
+      content: userMessage, 
+      timestamp: new Date().toISOString() 
+    };
+    setMessages(prev => [...prev, userMsg]);
 
     try {
-      // Вызываем AI через backend (ключ в БД!)
-      const { data } = await api.post(`/api/projects/${projectId}/blocks/${blockId}/ai-chat`, {
-        message: userMessage,
-        history: messages.map((m) => ({ role: m.role, content: m.content })),
-        blockContext: blockData,
-      });
+      // Вызываем AI через backend
+      const { data } = await api.post(
+        `/api/projects/${projectId}/blocks/${blockId}/ai-chat`,
+        {
+          message: userMessage,
+          history: messages.map((m) => ({ role: m.role, content: m.content })),
+          blockContext: blockData,
+        },
+        { signal: abortControllerRef.current.signal }
+      );
 
       if (data.success) {
-        // Проверяем, не добавлено ли это сообщение уже
-        const responseId = data.data.text.slice(0, 100);
-        if (processedResponses.current.has(responseId)) {
-          return;
-        }
-        processedResponses.current.add(responseId);
-        
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: data.data.text,
-            flags: data.data.flags,
-            timestamp: new Date().toISOString(),
-          },
-        ]);
+        // Проверяем, нет ли уже такого сообщения
+        const responseContent = data.data.text;
+        setMessages((prev) => {
+          // Проверяем, не добавлено ли уже сообщение с таким содержимым
+          const alreadyExists = prev.some(
+            m => m.role === 'assistant' && m.content === responseContent
+          );
+          if (alreadyExists) return prev;
+          
+          return [
+            ...prev,
+            {
+              role: 'assistant',
+              content: responseContent,
+              flags: data.data.flags,
+              timestamp: new Date().toISOString(),
+            },
+          ];
+        });
       } else {
         throw new Error(data.error || 'Ошибка AI-ассистента');
       }
     } catch (error: unknown) {
+      if ((error as Error).name === 'AbortError') return;
+      
       const err = error as { response?: { data?: { error?: string } }; message?: string };
       const errorMessage = err.response?.data?.error || err.message || 'Ошибка соединения с AI';
       toast.error(errorMessage);
 
-      // Добавляем сообщение об ошибке
       setMessages((prev) => [
         ...prev,
         {
@@ -121,6 +149,7 @@ export function AiBlockAssistant({
         },
       ]);
     } finally {
+      isProcessingRef.current = false;
       setIsLoading(false);
     }
   };
