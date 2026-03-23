@@ -50,7 +50,7 @@ export function ProjectDetailPage(): JSX.Element {
   };
 
   const handleDelete = async (): Promise<void> => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
+    if (window.confirm(ru.projects.confirmDelete)) {
       try {
         await deleteProject.mutateAsync(id || '');
         await navigate('/projects');
@@ -89,9 +89,11 @@ export function ProjectDetailPage(): JSX.Element {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full">
-          <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Error</h2>
+          <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">
+            {ru.common.error}
+          </h2>
           <p className="text-gray-700 dark:text-gray-300 mb-6">
-            {error instanceof Error ? error.message : 'Project not found'}
+            {error instanceof Error ? error.message : ru.projects.projectNotFound}
           </p>
           <button
             onClick={() => {
@@ -99,7 +101,7 @@ export function ProjectDetailPage(): JSX.Element {
             }}
             className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            Back to Projects
+            {ru.projects.backToProjects}
           </button>
         </div>
       </div>
@@ -115,7 +117,7 @@ export function ProjectDetailPage(): JSX.Element {
               onClick={handleCancelEdit}
               className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
             >
-              ← Cancel Edit
+              {ru.projects.cancelEdit}
             </button>
           </div>
 
@@ -162,41 +164,41 @@ export function ProjectDetailPage(): JSX.Element {
           {/* Details Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Priority</p>
-              <p className="font-medium text-gray-900 dark:text-white capitalize">
-                {project.priority}
+              <p className="text-sm text-gray-500 dark:text-gray-400">{ru.projects.priority}</p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                {(ru.priority as Record<string, string>)[project.priority] || project.priority}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Owner</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{ru.projects.owner}</p>
               <p className="font-medium text-gray-900 dark:text-white">{project.owner.fullName}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Start Date</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{ru.projects.startDate}</p>
               <p className="font-medium text-gray-900 dark:text-white">
                 {project.startDate
                   ? new Date(project.startDate).toLocaleDateString('ru-RU')
-                  : 'Not set'}
+                  : ru.projects.notSet}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">End Date</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{ru.projects.endDate}</p>
               <p className="font-medium text-gray-900 dark:text-white">
                 {project.endDate
                   ? new Date(project.endDate).toLocaleDateString('ru-RU')
-                  : 'Not set'}
+                  : ru.projects.notSet}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Target Date</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{ru.projects.targetDate}</p>
               <p className="font-medium text-gray-900 dark:text-white">
                 {project.targetDate
                   ? new Date(project.targetDate).toLocaleDateString('ru-RU')
-                  : 'Not set'}
+                  : ru.projects.notSet}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Created</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{ru.projects.created}</p>
               <p className="font-medium text-gray-900 dark:text-white">
                 {new Date(project.createdAt).toLocaleDateString('ru-RU')}
               </p>
@@ -207,7 +209,7 @@ export function ProjectDetailPage(): JSX.Element {
           {project.budget ? (
             <div className="border-t border-gray-200 dark:border-gray-700 pt-6 mb-6">
               <div className="flex justify-between mb-2">
-                <span className="text-gray-500 dark:text-gray-400">Budget</span>
+                <span className="text-gray-500 dark:text-gray-400">{ru.projects.budget}</span>
                 <span className="font-medium text-gray-900 dark:text-white">
                   {new Intl.NumberFormat('ru-RU', {
                     style: 'currency',
@@ -218,7 +220,7 @@ export function ProjectDetailPage(): JSX.Element {
               </div>
               {project.spent > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Spent</span>
+                  <span className="text-gray-500 dark:text-gray-400">{ru.projects.spent}</span>
                   <span className="font-medium text-gray-900 dark:text-white">
                     {new Intl.NumberFormat('ru-RU', {
                       style: 'currency',
@@ -243,7 +245,7 @@ export function ProjectDetailPage(): JSX.Element {
               onClick={handleEdit}
               className="flex-1 py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
             >
-              Edit Project
+              {ru.projects.editProject}
             </button>
             <button
               onClick={() => {
@@ -252,7 +254,7 @@ export function ProjectDetailPage(): JSX.Element {
               disabled={deleteProject.isPending}
               className="flex-1 py-3 px-4 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {deleteProject.isPending ? 'Deleting...' : 'Delete Project'}
+              {deleteProject.isPending ? ru.projects.deleting : ru.projects.deleteProject}
             </button>
           </div>
         </div>
@@ -260,7 +262,9 @@ export function ProjectDetailPage(): JSX.Element {
         {/* Team Members */}
         {members && members.length > 0 ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sm:p-8">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Team Members</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+              {ru.projects.teamMembers}
+            </h2>
             <div className="space-y-3">
               {members.map((member) => (
                 <div
@@ -281,7 +285,7 @@ export function ProjectDetailPage(): JSX.Element {
                     </div>
                   </div>
                   <span className="px-3 py-1 text-sm font-medium rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-                    {member.role}
+                    {(ru.roles as Record<string, string>)[member.role] || member.role}
                   </span>
                 </div>
               ))}

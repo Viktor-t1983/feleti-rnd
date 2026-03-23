@@ -104,6 +104,14 @@ export const ru = {
     tryAdjustingFilters: 'Попробуйте изменить фильтры или создать новый проект.',
     showingXOfYProjects: 'Показано {count} из {total} проектов',
     target: 'Цель',
+    created: 'Создан',
+    teamMembers: 'Участники команды',
+    notSet: 'Не установлена',
+    deleting: 'Удаление...',
+    confirmDelete: 'Вы уверены, что хотите удалить этот проект?',
+    projectNotFound: 'Проект не найден',
+    backToProjects: 'Назад к проектам',
+    cancelEdit: '← Отменить редактирование',
   },
 
   // Project Stages
@@ -130,6 +138,16 @@ export const ru = {
     low: 'Низкий',
     medium: 'Средний',
     high: 'Высокий',
+  },
+
+  // Team Roles
+  roles: {
+    'Lead Engineer': 'Ведущий инженер',
+    'Project Manager': 'Руководитель проекта',
+    Engineer: 'Инженер',
+    Designer: 'Дизайнер',
+    Analyst: 'Аналитик',
+    Member: 'Участник',
   },
 
   // Financial Calculators
