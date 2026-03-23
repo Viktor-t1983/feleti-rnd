@@ -24,12 +24,12 @@ interface SystemSetting {
 
 // API functions
 const fetchSettings = async (): Promise<SystemSetting[]> => {
-  const { data } = await api.get('/settings');
+  const { data } = await api.get('/api/settings');
   return data.data;
 };
 
 const updateSetting = async (key: string, value: string): Promise<SystemSetting> => {
-  const { data } = await api.put(`/settings/${key}`, { value });
+  const { data } = await api.put(`/api/settings/${key}`, { value });
   return data.data;
 };
 
