@@ -50,6 +50,10 @@ export function AiBlockAssistant({
   const [messages, setMessages] = useState<AiMessage[]>(history || []);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // 🔒 Защита от двойного вызова
+  const isProcessingRef = useRef<boolean>(false);
+  const lastMessageRef = useRef<string>('');
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -78,10 +82,20 @@ export function AiBlockAssistant({
     return { cleanContent, flags };
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  // 🔒 Отслеживаем уже сохранённые сообщения
+  const savedMessageIds = useRef<Set<string>>(new Set());
 
+  const sendMessage = async () => {
     const userMessageText = input.trim();
+    
+    // 🔒 Строгая защита от дублирования
+    if (!userMessageText || isProcessingRef.current || isLoading) return;
+    if (lastMessageRef.current === userMessageText) return;
+    
+    isProcessingRef.current = true;
+    lastMessageRef.current = userMessageText;
+    setInput('');
+    setIsLoading(true);
 
     const userMessage: AiMessage = {
       role: 'user',
@@ -90,12 +104,14 @@ export function AiBlockAssistant({
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
 
     try {
-      // Save user message
-      onSave({ role: 'user', content: userMessageText });
+      // Save user message (с защитой от дублирования)
+      const userMsgId = `user_${userMessageText.slice(0, 50)}`;
+      if (!savedMessageIds.current.has(userMsgId)) {
+        savedMessageIds.current.add(userMsgId);
+        onSave({ role: 'user', content: userMessageText });
+      }
 
       // Prepare conversation history for API
       const conversationHistory = messages.map((m) => ({
@@ -129,12 +145,16 @@ export function AiBlockAssistant({
 
         setMessages((prev) => [...prev, aiMessage]);
 
-        // Save AI message with flags
-        onSave({
-          role: 'assistant',
-          content: aiContent,
-          flags: flags.length > 0 ? flags : undefined,
-        });
+        // Save AI message with flags (с защитой от дублирования)
+        const aiMsgId = `ai_${aiContent.slice(0, 100)}`;
+        if (!savedMessageIds.current.has(aiMsgId)) {
+          savedMessageIds.current.add(aiMsgId);
+          onSave({
+            role: 'assistant',
+            content: aiContent,
+            flags: flags.length > 0 ? flags : undefined,
+          });
+        }
       } else {
         throw new Error(response.error || 'Ошибка AI-ассистента');
       }
@@ -153,12 +173,13 @@ export function AiBlockAssistant({
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
+      isProcessingRef.current = false;
       setIsLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading && !isProcessingRef.current) {
       e.preventDefault();
       sendMessage();
     }

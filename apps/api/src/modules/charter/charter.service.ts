@@ -280,7 +280,7 @@ export class CharterService {
    */
   async aiChat(
     blockId: string,
-    userId: string,
+    _userId: string,
     message: string,
     history: Array<{ role: 'user' | 'assistant'; content: string }>,
     blockContext?: Record<string, unknown>
@@ -404,9 +404,8 @@ export class CharterService {
     }
     const cleanText = aiText.replace(flagRegex, '').trim();
 
-    // Сохранить в историю
-    await this.saveAiMessage(blockId, userId, { role: 'user', content: message });
-    await this.saveAiMessage(blockId, userId, { role: 'assistant', content: cleanText, flags });
+    // NOTE: Сохранение сообщений делает frontend через отдельный endpoint /ai-message
+    // чтобы избежать дублирования
 
     logger.info({ blockId, flags: flags.length }, 'AI chat completed');
     return { text: cleanText, flags };
