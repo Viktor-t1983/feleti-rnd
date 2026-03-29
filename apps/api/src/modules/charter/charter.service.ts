@@ -7,16 +7,15 @@ import type { Prisma, Project, TemplateBlock, ProjectBlock, $Enums } from '@pris
 
 import { prisma } from '../../lib/prisma';
 import { logger } from '../../utils/logger';
-import { getSettingByKey } from '../settings/settings.service';
 
-// Extended types for includes
-type ProjectWithCharter = Project & {
-  equipmentTypes?: Array<{
-    id: string;
-    templateBlocks: TemplateBlock[];
-  }>;
-  blocks?: Array<ProjectBlock & { templateBlock: TemplateBlock }>;
-};
+import {
+  getBlockAIConfig,
+  getProviderByCode,
+  getProviderApiKey,
+  getNextFallbackProvider,
+  isAutoFallbackEnabled,
+  getResearchProvider,
+} from '../ai/ai-providers.service';
 
 export class CharterService {
   // ==========================================
@@ -99,116 +98,59 @@ export class CharterService {
         aiEnabled: data.aiEnabled,
         aiPrompt: data.aiPrompt,
         aiModel: data.aiModel,
-        fieldSchema: data.fieldSchema ? (data.fieldSchema as Prisma.JsonObject) : undefined,
+        fieldSchema: data.fieldSchema as Prisma.JsonObject | undefined,
         defaultValues: data.defaultValues as Prisma.JsonObject | undefined,
       },
     });
 
-    logger.info({ id }, 'Template block updated');
+    logger.info({ id: block.id, name: block.name }, 'Template block updated');
     return block;
   }
 
-  async deleteTemplateBlock(id: string): Promise<{ success: boolean }> {
+  async deleteTemplateBlock(id: string): Promise<void> {
     logger.debug({ id }, 'Deleting template block');
-
-    await prisma.templateBlock.delete({
-      where: { id },
+    
+    // Check if there are related project blocks
+    const relatedProjectBlocks = await prisma.projectBlock.findMany({
+      where: { templateBlockId: id },
     });
-
+    
+    if (relatedProjectBlocks.length > 0) {
+      // Delete related project blocks first
+      await prisma.projectBlock.deleteMany({
+        where: { templateBlockId: id },
+      });
+      logger.info({ id, count: relatedProjectBlocks.length }, 'Deleted related project blocks');
+    }
+    
+    await prisma.templateBlock.delete({ where: { id } });
     logger.info({ id }, 'Template block deleted');
-    return { success: true };
-  }
-
-  async reorderBlocks(blocks: { id: string; sortOrder: number }[]): Promise<{ success: boolean }> {
-    logger.debug({ count: blocks.length }, 'Reordering blocks');
-
-    await Promise.all(
-      blocks.map((b) =>
-        prisma.templateBlock.update({
-          where: { id: b.id },
-          data: { sortOrder: b.sortOrder },
-        })
-      )
-    );
-
-    logger.info('Blocks reordered');
-    return { success: true };
   }
 
   // ==========================================
-  // PROJECT BLOCKS (для устава конкретного проекта)
+  // PROJECT BLOCKS (для заполнения устава - инженер)
   // ==========================================
 
-  async getProjectCharter(projectId: string): Promise<ProjectWithCharter> {
-    logger.debug({ projectId }, 'Getting project charter');
+  async getProjectBlocks(projectId: string): Promise<
+    Array<ProjectBlock & { templateBlock: TemplateBlock }>
+  > {
+    logger.debug({ projectId }, 'Getting project blocks');
 
-    // Получить проект с типом оборудования
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      include: {
-        equipmentTypes: {
-          include: {
-            templateBlocks: {
-              orderBy: { sortOrder: 'asc' },
-            },
-          },
-        },
-        blocks: {
-          include: { templateBlock: true },
-          orderBy: {
-            templateBlock: {
-              sortOrder: 'asc',
-            },
-          },
-        },
-      },
+    return prisma.projectBlock.findMany({
+      where: { projectId },
+      include: { templateBlock: true },
+      orderBy: { templateBlock: { sortOrder: 'asc' } },
     });
-
-    if (!project) {
-      throw new Error('Project not found');
-    }
-
-    // Получаем первый equipmentType (для простоты)
-    const equipmentType = project.equipmentTypes?.[0];
-
-    // Если есть тип оборудования - создать недостающие блоки
-    if (equipmentType) {
-      const existingBlockIds = new Set(project.blocks?.map((b) => b.templateBlockId) || []);
-      const missingBlocks = equipmentType.templateBlocks.filter(
-        (tb: TemplateBlock) => !existingBlockIds.has(tb.id)
-      );
-
-      if (missingBlocks.length > 0) {
-        logger.debug({ count: missingBlocks.length }, 'Creating missing project blocks');
-
-        await Promise.all(
-          missingBlocks.map((tb: TemplateBlock) =>
-            prisma.projectBlock.create({
-              data: {
-                projectId,
-                templateBlockId: tb.id,
-                updatedBy: project.ownerId,
-              },
-            })
-          )
-        );
-
-        // Перезагрузить с новыми блоками
-        return this.getProjectCharter(projectId);
-      }
-    }
-
-    return project as ProjectWithCharter;
   }
 
   async updateProjectBlock(
     blockId: string,
-    userId: string,
     data: {
-      data?: unknown;
-      aiHistory?: unknown;
-      aiFlags?: unknown;
-      status?: string;
+      data?: Record<string, unknown>;
+      aiHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+      aiFlags?: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
+      status?: $Enums.ProjectBlockStatus;
+      updatedBy: string;
     }
   ): Promise<ProjectBlock> {
     logger.debug({ blockId }, 'Updating project block');
@@ -216,18 +158,355 @@ export class CharterService {
     const block = await prisma.projectBlock.update({
       where: { id: blockId },
       data: {
-        data: data.data ? (data.data as Prisma.JsonObject) : undefined,
-        aiHistory: data.aiHistory ? (data.aiHistory as Prisma.JsonArray) : undefined,
-        aiFlags: data.aiFlags ? (data.aiFlags as Prisma.JsonArray) : undefined,
-        status: data.status as $Enums.ProjectBlockStatus | undefined,
-        updatedBy: userId,
+        data: data.data as Prisma.JsonObject | undefined,
+        aiHistory: data.aiHistory as Prisma.JsonArray | undefined,
+        aiFlags: data.aiFlags as Prisma.JsonArray | undefined,
+        status: data.status,
+        updatedBy: data.updatedBy,
+        updatedAt: new Date(),
       },
     });
 
-    logger.info({ blockId }, 'Project block updated');
+    logger.info({ blockId, status: data.status }, 'Project block updated');
     return block;
   }
 
+  // ==========================================
+  // PROJECT CHARTER (инициализация блоков)
+  // ==========================================
+
+  /**
+   * Инициализировать устав проекта из шаблонов оборудования
+   * Принимает equipmentTypeId и создаёт блоки из template_blocks
+   */
+  async initializeProjectCharter(
+    projectId: string,
+    equipmentTypeId: string,
+    userId: string
+  ): Promise<Array<ProjectBlock & { templateBlock: TemplateBlock }>> {
+    logger.info({ projectId, equipmentTypeId }, 'Initializing project charter from equipment type');
+
+    const templateBlocks = await prisma.templateBlock.findMany({
+      where: { equipmentTypeId },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    if (templateBlocks.length === 0) {
+      throw new Error('Нет шаблонов блоков для данного типа оборудования');
+    }
+
+    const projectBlocks = await Promise.all(
+      templateBlocks.map((template) =>
+        prisma.projectBlock.create({
+          data: {
+            projectId,
+            templateBlockId: template.id,
+            data: template.defaultValues || {},
+            aiHistory: [],
+            aiFlags: [],
+            status: 'EMPTY',
+            updatedBy: userId,
+          },
+          include: { templateBlock: true },
+        })
+      )
+    );
+
+    logger.info(
+      { projectId, blockCount: projectBlocks.length },
+      'Project charter initialized from template'
+    );
+
+    return projectBlocks;
+  }
+
+  // ==========================================
+  // AI CHAT (с мульти-провайдерной поддержкой и fallback)
+  // ==========================================
+
+  private async callAIProvider(
+    providerCode: string,
+    systemPrompt: string,
+    messages: Array<{ role: string; content: string }>,
+    maxTokens: number
+  ): Promise<{ text: string; provider: string }> {
+    const provider = await getProviderByCode(providerCode);
+    if (!provider) {
+      throw new Error(`Провайдер ${providerCode} не найден`);
+    }
+
+    const apiKey = await getProviderApiKey(providerCode);
+    if (!apiKey) {
+      throw new Error(`API ключ для ${providerCode} не настроен`);
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    let requestBody: Record<string, unknown>;
+
+    // Anthropic (Claude) uses different API format
+    if (providerCode === 'claude' || providerCode === 'anthropic') {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      requestBody = {
+        model: provider.defaultModel,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      };
+    } else {
+      // OpenAI-compatible format (DeepSeek, Kimi, Qwen, GLM, MiniMax, Perplexity)
+      headers['Authorization'] = `Bearer ${apiKey}`;
+      requestBody = {
+        model: provider.defaultModel,
+        max_tokens: maxTokens,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages,
+        ],
+      };
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+    try {
+      const response = await fetch(provider.apiEndpoint + '/chat/completions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = (await response.json()) as Record<string, unknown>;
+
+      // Parse response
+      let text = '';
+      if (providerCode === 'claude' || providerCode === 'anthropic') {
+        const content = data['content'] as Array<{ text?: string }> | undefined;
+        text = content?.[0]?.text || '';
+      } else {
+        const choices = data['choices'] as Array<{
+          message?: { content?: string };
+        }> | undefined;
+        text = choices?.[0]?.message?.content || '';
+      }
+
+      return { text, provider: providerCode };
+    } catch (error) {
+      clearTimeout(timeout);
+      throw error;
+    }
+  }
+
+  private parseFlags(
+    text: string
+  ): {
+    cleanText: string;
+    flags: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
+  } {
+    const flagRegex = /FLAG:(red|yellow|green):([^:]+):(.+?)(?=FLAG:|$)/g;
+    const flags: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }> = [];
+    let match;
+
+    while ((match = flagRegex.exec(text)) !== null) {
+      if (match[1] && match[2] && match[3]) {
+        flags.push({
+          level: match[1] as 'red' | 'yellow' | 'green',
+          title: match[2].trim(),
+          text: match[3].trim(),
+        });
+      }
+    }
+
+    const cleanText = text.replace(flagRegex, '').trim();
+    return { cleanText, flags };
+  }
+
+  async aiChat(
+    blockId: string,
+    _userId: string,
+    message: string,
+    history: Array<{ role: 'user' | 'assistant'; content: string }>,
+    blockContext?: Record<string, unknown>
+  ): Promise<{
+    text: string;
+    flags?: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
+    provider?: string;
+  }> {
+    logger.debug({ blockId }, 'AI chat started');
+
+    // Получаем блок с конфигурацией AI
+    const block = await prisma.projectBlock.findUnique({
+      where: { id: blockId },
+      include: { templateBlock: true },
+    });
+
+    if (!block) {
+      throw new Error('Блок не найден');
+    }
+
+    // Получаем AI конфиг для блока
+    const aiConfig = await getBlockAIConfig(block.templateBlockId);
+
+    // Определяем провайдера для использования
+    const primaryProvider = aiConfig?.primaryProvider || block.templateBlock?.aiModel || 'deepseek';
+    const fallbackProvider = aiConfig?.fallbackProvider;
+    const enableResearch = aiConfig?.enableResearch || false;
+    const maxTokens = 4096;
+
+    // Если включен research и нужен веб-поиск
+    let enrichedMessage = message;
+    if (enableResearch) {
+      const researchProviderCode = await getResearchProvider();
+      const researchProvider = await getProviderByCode(researchProviderCode);
+
+      if (researchProvider?.capabilities?.search || researchProvider?.capabilities?.research) {
+        try {
+          // Делаем research-запрос
+          const researchResult = await this.callAIProvider(
+            researchProviderCode,
+            'Ты исследовательский ассистент. Найди актуальную информацию по запросу пользователя.',
+            [{ role: 'user', content: message }],
+            2000
+          );
+          enrichedMessage = `${message}\n\n[Данные из исследования]: ${researchResult.text}`;
+          logger.debug({ blockId }, 'Research data added to message');
+        } catch (error) {
+          logger.warn({ blockId, error }, 'Research failed, continuing without it');
+        }
+      }
+    }
+
+    // Формируем системный промпт
+    const basePrompt =
+      block.templateBlock?.aiPrompt ||
+      'Ты AI-ассистент для R&D проектов FELETI. Помогай инженеру заполнять устав. Отвечай на русском.';
+
+    const contextStr = blockContext ? JSON.stringify(blockContext, null, 2) : '{}';
+    const systemPrompt = `${basePrompt}\n\nКонтекст блока:\n${contextStr}\n\nИспользуй флаги для рисков: FLAG:red:Заголовок:Описание или FLAG:yellow:... или FLAG:green:...`;
+
+    const messages = [...history, { role: 'user', content: enrichedMessage }];
+
+    // Пробуем основного провайдера
+    const providersToTry: string[] = [primaryProvider];
+
+    // Добавляем fallback если включен
+    const autoFallback = await isAutoFallbackEnabled();
+    if (autoFallback && fallbackProvider) {
+      providersToTry.push(fallbackProvider);
+    }
+
+    // Пробуем следующий в цепочке fallback если основной не сработал
+    if (autoFallback) {
+      const nextFallback = await getNextFallbackProvider(primaryProvider);
+      if (nextFallback && !providersToTry.includes(nextFallback)) {
+        providersToTry.push(nextFallback);
+      }
+    }
+
+    let lastError: Error | null = null;
+
+    for (const providerCode of providersToTry) {
+      try {
+        logger.debug({ blockId, provider: providerCode }, 'Trying AI provider');
+
+        const { text, provider } = await this.callAIProvider(
+          providerCode,
+          systemPrompt,
+          messages,
+          maxTokens
+        );
+
+        const { cleanText, flags } = this.parseFlags(text);
+
+        logger.info(
+          { blockId, provider, flags: flags.length, fallbackUsed: providerCode !== primaryProvider },
+          'AI chat completed'
+        );
+
+        return {
+          text: cleanText,
+          flags,
+          provider,
+        };
+      } catch (error) {
+        lastError = error as Error;
+        logger.warn(
+          { blockId, provider: providerCode, error: (error as Error).message },
+          'AI provider failed, trying fallback'
+        );
+        continue;
+      }
+    }
+
+    // Все провайдеры отказали
+    logger.error({ blockId, error: lastError?.message }, 'All AI providers failed');
+    throw new Error(
+      `AI-ассистент временно недоступен. Попробуйте позже или обратитесь к администратору.\n\nОшибка: ${lastError?.message}`
+    );
+  }
+
+  // ==========================================
+  // ADDITIONAL METHODS (для обратной совместимости с routes)
+  // ==========================================
+
+  /**
+   * Reorder template blocks
+   */
+  async reorderBlocks(updates: Array<{ id: string; sortOrder: number }>): Promise<void> {
+    logger.debug({ count: updates.length }, 'Reordering blocks');
+
+    await prisma.$transaction(
+      updates.map((update) =>
+        prisma.templateBlock.update({
+          where: { id: update.id },
+          data: { sortOrder: update.sortOrder },
+        })
+      )
+    );
+
+    logger.info('Blocks reordered');
+  }
+
+  /**
+   * Get full project charter with blocks
+   */
+  async getProjectCharter(projectId: string): Promise<{
+    project: Project;
+    blocks: Array<ProjectBlock & { templateBlock: TemplateBlock }>;
+  }> {
+    logger.debug({ projectId }, 'Getting project charter');
+
+    const [project, blocks] = await Promise.all([
+      prisma.project.findUnique({
+        where: { id: projectId },
+      }),
+      this.getProjectBlocks(projectId),
+    ]);
+
+    if (!project) {
+      throw new Error('Проект не найден');
+    }
+
+    return { project, blocks };
+  }
+
+  /**
+   * Save AI message to block history
+   */
   async saveAiMessage(
     blockId: string,
     userId: string,
@@ -244,171 +523,37 @@ export class CharterService {
     });
 
     if (!block) {
-      throw new Error('Block not found');
+      throw new Error('Блок не найден');
     }
 
-    const history = (block.aiHistory as Array<unknown>) || [];
-    const flags = (block.aiFlags as Array<unknown>) || [];
+    // Update history
+    const history = (block.aiHistory as Array<{ role: string; content: string }>) || [];
+    history.push({
+      role: message.role,
+      content: message.content,
+    });
 
-    const newHistory = [
-      ...history,
-      {
-        role: message.role,
-        content: message.content,
-        timestamp: new Date().toISOString(),
-      },
-    ];
-
-    const newFlags = message.flags ? [...flags, ...message.flags] : flags;
+    // Update flags if provided
+    let flags = block.aiFlags as Array<{
+      level: 'red' | 'yellow' | 'green';
+      title: string;
+      text: string;
+    }>;
+    if (message.flags && message.flags.length > 0) {
+      flags = [...((flags as typeof message.flags) || []), ...message.flags];
+    }
 
     const updated = await prisma.projectBlock.update({
       where: { id: blockId },
       data: {
-        aiHistory: newHistory as Prisma.JsonArray,
-        aiFlags: newFlags as Prisma.JsonArray,
+        aiHistory: history as Prisma.JsonArray,
+        aiFlags: flags as Prisma.JsonArray,
         updatedBy: userId,
-        status: 'IN_PROGRESS',
       },
     });
 
     logger.info({ blockId }, 'AI message saved');
     return updated;
-  }
-
-  /**
-   * AI Chat через backend (ключ из БД, не из .env)
-   */
-  async aiChat(
-    blockId: string,
-    _userId: string,
-    message: string,
-    history: Array<{ role: 'user' | 'assistant'; content: string }>,
-    blockContext?: Record<string, unknown>
-  ): Promise<{
-    text: string;
-    flags?: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
-  }> {
-    logger.debug({ blockId }, 'AI chat started');
-
-    // Получить конфиг AI из БД (не из .env!)
-    const provider = (await getSettingByKey('ai.provider'))?.value || 'deepseek';
-    const model =
-      (await getSettingByKey('ai.model'))?.value ||
-      (await getSettingByKey('ai.default_model'))?.value ||
-      'deepseek-chat';
-    const apiKey =
-      (await getSettingByKey('ai.api_key'))?.value ||
-      (await getSettingByKey(`ai.${provider}.api_key`))?.value;
-    const maxTokens = parseInt((await getSettingByKey('ai.max_tokens'))?.value || '1000');
-
-    if (!apiKey) {
-      throw new Error(
-        'AI-ассистент не настроен. Администратор должен добавить API ключ в /admin/settings'
-      );
-    }
-
-    // Получить блок с промптом
-    const block = await prisma.projectBlock.findUnique({
-      where: { id: blockId },
-      include: { templateBlock: true },
-    });
-
-    if (!block) {
-      throw new Error('Блок не найден');
-    }
-
-    const systemPrompt =
-      block.templateBlock?.aiPrompt ||
-      'Ты AI-ассистент для R&D проектов FELETI. Помогай инженеру заполнять устав. Отвечай на русском.';
-
-    // API URLs для разных провайдеров
-    const apiUrls: Record<string, string> = {
-      anthropic: 'https://api.anthropic.com/v1/messages',
-      openai: 'https://api.openai.com/v1/chat/completions',
-      deepseek: 'https://api.deepseek.com/v1/chat/completions',
-      kimi: 'https://api.moonshot.cn/v1/chat/completions',
-    };
-
-    const apiUrl = apiUrls[provider] || apiUrls['deepseek'];
-    if (!apiUrl) {
-      throw new Error(`Неизвестный провайдер AI: ${provider}`);
-    }
-
-    // Формируем запрос в зависимости от провайдера
-    let requestBody: Record<string, unknown>;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    const messages = [...history, { role: 'user', content: message }];
-
-    const contextStr = blockContext ? JSON.stringify(blockContext, null, 2) : '{}';
-    const fullSystemPrompt = `${systemPrompt}\n\nКонтекст блока:\n${contextStr}\n\nИспользуй флаги для рисков: FLAG:red:Заголовок:Описание или FLAG:yellow:... или FLAG:green:...`;
-
-    if (provider === 'anthropic') {
-      headers['x-api-key'] = apiKey;
-      headers['anthropic-version'] = '2023-06-01';
-      requestBody = {
-        model,
-        max_tokens: maxTokens,
-        system: fullSystemPrompt,
-        messages,
-      };
-    } else {
-      // OpenAI-совместимый формат (OpenAI, DeepSeek, Kimi)
-      headers['Authorization'] = `Bearer ${apiKey}`;
-      requestBody = {
-        model,
-        max_tokens: maxTokens,
-        messages: [{ role: 'system', content: fullSystemPrompt }, ...messages],
-      };
-    }
-
-    // Отправляем запрос к AI API
-    const response = await fetch(apiUrl as string, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error({ status: response.status, error: errorText }, 'AI API error');
-      throw new Error(`AI API ошибка: ${response.status} ${errorText}`);
-    }
-
-    const aiData = (await response.json()) as Record<string, unknown>;
-
-    // Парсим ответ в зависимости от провайдера
-    let aiText = '';
-    if (provider === 'anthropic') {
-      const content = aiData['content'] as Array<{ text?: string }> | undefined;
-      aiText = content && content[0]?.text ? content[0].text : '';
-    } else {
-      const choices = aiData['choices'] as Array<{ message?: { content?: string } }> | undefined;
-      aiText = choices && choices[0]?.message?.content ? choices[0].message.content : '';
-    }
-
-    // Парсим флаги рисков
-    const flagRegex = /FLAG:(red|yellow|green):([^:]+):(.+?)(?=FLAG:|$)/g;
-    const flags: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }> = [];
-    let match;
-    while ((match = flagRegex.exec(aiText)) !== null) {
-      if (match[1] && match[2] && match[3]) {
-        flags.push({
-          level: match[1] as 'red' | 'yellow' | 'green',
-          title: match[2].trim(),
-          text: match[3].trim(),
-        });
-      }
-    }
-    const cleanText = aiText.replace(flagRegex, '').trim();
-
-    // NOTE: Сохранение сообщений делает frontend через отдельный endpoint /ai-message
-    // чтобы избежать дублирования
-
-    logger.info({ blockId, flags: flags.length }, 'AI chat completed');
-    return { text: cleanText, flags };
   }
 }
 

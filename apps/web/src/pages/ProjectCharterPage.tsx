@@ -246,6 +246,7 @@ export function ProjectCharterPage(): JSX.Element {
   const queryClient = useQueryClient();
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null);
   const [aiAssistantBlock, setAiAssistantBlock] = useState<ProjectBlock | null>(null);
+  const [viewBlockData, setViewBlockData] = useState<ProjectBlock | null>(null);
 
   // Queries
   const { data: charter, isLoading } = useQuery({
@@ -294,6 +295,12 @@ export function ProjectCharterPage(): JSX.Element {
   const handleAiSave = (blockId: string) => {
     return (message: { role: 'user' | 'assistant'; content: string; flags?: unknown[] }) => {
       saveAiMessageMutation.mutate({ blockId, message });
+    };
+  };
+
+  const handleApplyToBlock = (blockId: string) => {
+    return (data: Record<string, unknown>) => {
+      updateBlockMutation.mutate({ blockId, data: { data } });
     };
   };
 
@@ -429,6 +436,17 @@ export function ProjectCharterPage(): JSX.Element {
 
                     {/* Action buttons */}
                     <div className="flex flex-wrap gap-3">
+                      {/* Кнопка просмотра данных блока */}
+                      {(block.data && (typeof block.data === 'object') && Object.keys(block.data as object).length > 0) || 
+                       (block.aiFlags && block.aiFlags.length > 0) && (
+                        <button
+                          onClick={() => setViewBlockData(block)}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          👁 Просмотр
+                        </button>
+                      )}
+
                       {block.templateBlock.aiEnabled && (
                         <button
                           onClick={() => setAiAssistantBlock(block)}
@@ -486,8 +504,110 @@ export function ProjectCharterPage(): JSX.Element {
           blockData={aiAssistantBlock.data || {}}
           history={aiAssistantBlock.aiHistory || []}
           onSave={handleAiSave(aiAssistantBlock.id)}
+          onApplyToBlock={handleApplyToBlock(aiAssistantBlock.id)}
           onClose={() => setAiAssistantBlock(null)}
         />
+      )}
+
+      {/* Модальное окно просмотра данных блока */}
+      {viewBlockData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-blue-600 text-white">
+              <div>
+                <h3 className="text-lg font-semibold">📋 {viewBlockData.templateBlock.name}</h3>
+                <p className="text-sm text-blue-200">Заполненные данные</p>
+              </div>
+              <button
+                onClick={() => setViewBlockData(null)}
+                className="p-2 hover:bg-blue-700 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[60vh]">
+              {/* AI Flags - Риски */}
+              {viewBlockData.aiFlags && viewBlockData.aiFlags.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    🚩 Риски
+                  </h4>
+                  <div className="space-y-2">
+                    {viewBlockData.aiFlags.map((flag, fidx) => (
+                      <div
+                        key={fidx}
+                        className={`p-3 rounded-lg border ${
+                          flag.level === 'red'
+                            ? 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                            : flag.level === 'yellow'
+                            ? 'bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                            : 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        }`}
+                      >
+                        <div className="font-medium flex items-center gap-2">
+                          {flag.level === 'red' ? '🚨' : flag.level === 'yellow' ? '⚠️' : '✅'}
+                          {flag.title}
+                        </div>
+                        <div className="text-sm mt-1 opacity-80">{flag.text}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Статус блока */}
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  📊 Статус
+                </h4>
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                    viewBlockData.status === 'DONE' 
+                      ? 'bg-green-100 border-green-300 text-green-800' 
+                      : viewBlockData.status === 'IN_PROGRESS'
+                      ? 'bg-yellow-100 border-yellow-300 text-yellow-800'
+                      : 'bg-gray-100 border-gray-300 text-gray-800'
+                  }`}>
+                    {viewBlockData.status === 'DONE' ? '✅ Готов' : viewBlockData.status === 'IN_PROGRESS' ? '🔄 В работе' : '⏳ Пусто'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Данные блока */}
+              {viewBlockData.data && typeof viewBlockData.data === 'object' && Object.keys(viewBlockData.data).length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    📝 Заполненные данные
+                  </h4>
+                  <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    {viewBlockData.data.content ? (
+                      <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                        {String(viewBlockData.data.content)}
+                      </div>
+                    ) : (
+                      <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                        {JSON.stringify(viewBlockData.data, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(!viewBlockData.data || Object.keys(viewBlockData.data).length === 0) && 
+               (!viewBlockData.aiFlags || viewBlockData.aiFlags.length === 0) && (
+                <p className="text-gray-500 text-center py-8">Данные не заполнены</p>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setViewBlockData(null)}
+                className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

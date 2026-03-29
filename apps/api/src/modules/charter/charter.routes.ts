@@ -6,6 +6,7 @@
 import { FastifyInstance } from 'fastify';
 
 import { charterService } from './charter.service';
+import { logger } from '../../utils/logger';
 
 export async function charterRoutes(fastify: FastifyInstance) {
   // ==========================================
@@ -96,8 +97,16 @@ export async function charterRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const { id } = request.params;
-      await charterService.deleteTemplateBlock(id);
-      return reply.send({ success: true });
+      try {
+        await charterService.deleteTemplateBlock(id);
+        return reply.send({ success: true });
+      } catch (error) {
+        const err = error as Error;
+        logger.error({ id, error: err.message }, 'Failed to delete template block');
+        return reply.code(400).send({ 
+          error: err.message || 'Не удалось удалить блок' 
+        });
+      }
     }
   );
 
@@ -136,14 +145,37 @@ export async function charterRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // Инициализировать устав проекта из шаблона оборудования
+  fastify.post<{
+    Params: { projectId: string };
+    Body: { equipmentTypeId: string };
+  }>(
+    '/projects/:projectId/charter/initialize',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const { projectId } = request.params;
+      const { equipmentTypeId } = request.body;
+      const user = request.user as { userId: string };
+
+      const blocks = await charterService.initializeProjectCharter(
+        projectId,
+        equipmentTypeId,
+        user.userId
+      );
+      return reply.send({ success: true, data: blocks });
+    }
+  );
+
   // Обновить данные блока проекта
   fastify.put<{
     Params: { projectId: string; blockId: string };
     Body: {
-      data?: unknown;
-      aiHistory?: unknown;
-      aiFlags?: unknown;
-      status?: string;
+      data?: Record<string, unknown>;
+      aiHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+      aiFlags?: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
+      status?: 'EMPTY' | 'IN_PROGRESS' | 'DONE';
     };
   }>(
     '/projects/:projectId/blocks/:blockId',
@@ -153,7 +185,7 @@ export async function charterRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const { blockId } = request.params;
       const user = request.user as { userId: string };
-      const block = await charterService.updateProjectBlock(blockId, user.userId, request.body);
+      const block = await charterService.updateProjectBlock(blockId, { ...request.body, updatedBy: user.userId });
       return reply.send({ success: true, data: block });
     }
   );
