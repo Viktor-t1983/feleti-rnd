@@ -107,7 +107,7 @@ export function TemplatesPage(): JSX.Element {
     toast(
       (t) => (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium">Удалить шаблон "{template.name}"?</p>
+          <p className="text-sm font-medium">Удалить шаблон &quot;{template.name}&quot;?</p>
           <div className="flex gap-2">
             <button
               onClick={() => {

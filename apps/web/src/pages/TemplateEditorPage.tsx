@@ -42,8 +42,8 @@ const BLOCK_TYPE_OPTIONS = [
 
 // API functions
 const fetchEquipmentTypes = async (): Promise<EquipmentType[]> => {
-  const { data } = await api.get('/api/knowledge/equipment?limit=100');
-  return data.items;
+  const { data } = await api.get('/api/admin/equipment-types');
+  return data.data || [];
 };
 
 const fetchTemplateBlocks = async (equipmentTypeId: string): Promise<TemplateBlock[]> => {

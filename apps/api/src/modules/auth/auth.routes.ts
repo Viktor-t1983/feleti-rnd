@@ -126,7 +126,7 @@ export function authRoutes(fastify: FastifyInstance): void {
           role: result.user.role?.name,
         };
 
-        const accessToken = fastify.jwt.sign(tokenPayload, { expiresIn: '15m' });
+        const accessToken = fastify.jwt.sign(tokenPayload, { expiresIn: '2h' });
         const refreshToken = fastify.jwt.sign(tokenPayload, { expiresIn: '7d' });
 
         return reply.status(201).send({
@@ -179,7 +179,7 @@ export function authRoutes(fastify: FastifyInstance): void {
             role: result.user.role?.name,
           };
 
-          const accessToken = fastify.jwt.sign(tokenPayload, { expiresIn: '15m' });
+          const accessToken = fastify.jwt.sign(tokenPayload, { expiresIn: '2h' });
           const refreshToken = fastify.jwt.sign(tokenPayload, { expiresIn: '7d' });
 
           return reply.send({
@@ -261,14 +261,14 @@ export function authRoutes(fastify: FastifyInstance): void {
           role: string;
         };
 
-        // Generate new access token
+        // Generate new access token (expires in 2 hours)
         const newAccessToken = fastify.jwt.sign(
           {
             userId: payload.userId,
             email: payload.email,
             role: payload.role,
           },
-          { expiresIn: '15m' }
+          { expiresIn: '2h' }
         );
 
         // Return new access token (refresh token remains the same)

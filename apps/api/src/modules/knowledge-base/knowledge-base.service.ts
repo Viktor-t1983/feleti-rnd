@@ -554,9 +554,9 @@ export class KnowledgeBaseService {
         threatLevel: data.threatLevel || 'medium',
       },
       include: {
-        _count: {
-          select: { markets: true, equipment: true },
-        },
+      _count: {
+        select: { markets: true, equipment: true, projectLinks: true },
+      },
       },
     });
 
@@ -568,9 +568,9 @@ export class KnowledgeBaseService {
     const competitor = await prisma.competitorDetail.findUnique({
       where: { id },
       include: {
-        _count: {
-          select: { markets: true, equipment: true },
-        },
+      _count: {
+        select: { markets: true, equipment: true, projectLinks: true },
+      },
         markets: {
           include: {
             market: true,
@@ -579,6 +579,17 @@ export class KnowledgeBaseService {
         equipment: {
           include: {
             equipmentType: true,
+          },
+        },
+        projectLinks: {
+          include: {
+            project: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
           },
         },
       },
@@ -627,7 +638,7 @@ export class KnowledgeBaseService {
         orderBy: { threatLevel: 'desc' },
         include: {
           _count: {
-            select: { markets: true, equipment: true },
+            select: { markets: true, equipment: true, projectLinks: true },
           },
         },
       }),
@@ -668,9 +679,9 @@ export class KnowledgeBaseService {
         isActive: data.isActive,
       },
       include: {
-        _count: {
-          select: { markets: true, equipment: true },
-        },
+      _count: {
+        select: { markets: true, equipment: true, projectLinks: true },
+      },
       },
     });
 
@@ -734,8 +745,64 @@ export class KnowledgeBaseService {
     });
   }
 
+  async addCompetitorProject(competitorId: string, data: { projectId: string; notes?: string }) {
+    const competitor = await prisma.competitorDetail.findUnique({
+      where: { id: competitorId },
+    });
+    if (!competitor) {
+      throw new Error('Конкурент не найден');
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: data.projectId },
+    });
+    if (!project) {
+      throw new Error('Проект не найден');
+    }
+
+    const existing = await prisma.competitorProject.findUnique({
+      where: {
+        projectId_competitorId: {
+          projectId: data.projectId,
+          competitorId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new Error('Конкурент уже связан с этим проектом');
+    }
+
+    return prisma.competitorProject.create({
+      data: {
+        competitorId,
+        projectId: data.projectId,
+        notes: data.notes,
+      },
+    });
+  }
+
+  async removeCompetitorProject(competitorId: string, projectId: string) {
+    const link = await prisma.competitorProject.findUnique({
+      where: {
+        projectId_competitorId: {
+          projectId,
+          competitorId,
+        },
+      },
+    });
+
+    if (!link) {
+      throw new Error('Связь не найдена');
+    }
+
+    return prisma.competitorProject.delete({
+      where: { id: link.id },
+    });
+  }
+
   private mapToCompetitorListItem(
-    competitor: Prisma.CompetitorDetailGetPayload<{ include: { _count: true } }>
+    competitor: Prisma.CompetitorDetailGetPayload<{ include: { _count: { select: { markets: true, equipment: true, projectLinks: true } } } }>
   ): CompetitorListItem {
     return {
       id: competitor.id,
@@ -756,6 +823,88 @@ export class KnowledgeBaseService {
       employeesCount: competitor.employeesCount,
       _count: competitor._count,
     };
+  }
+
+  async getCompetitorsForProject(projectId: string) {
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        equipmentTypes: true,
+      },
+    });
+
+    if (!project) {
+      throw new Error('Проект не найден');
+    }
+
+    const equipmentTypeNames = project.equipmentTypes.map((et) => et.name);
+    const projectName = project.name.toLowerCase();
+    const searchTerms = [...equipmentTypeNames, projectName].filter(Boolean);
+
+    if (searchTerms.length === 0) {
+      return [];
+    }
+
+    const competitors = await prisma.competitorDetail.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          {
+            equipment: {
+              some: {
+                name: { in: searchTerms, mode: 'insensitive' },
+              },
+            },
+          },
+          {
+            productRange: {
+              hasSome: searchTerms,
+            },
+          },
+        ],
+      },
+      include: {
+        _count: {
+          select: { markets: true, equipment: true, projectLinks: true },
+        },
+        equipment: true,
+      },
+      orderBy: { threatLevel: 'asc' },
+      take: 10,
+    });
+
+    const results = competitors.map((c) => {
+      let reason: 'equipment' | 'productRange' | 'name' = 'name';
+      
+      const hasEquipmentMatch = c.equipment.some(
+        (e: { name: string }) => searchTerms.some(
+          (term) => e.name.toLowerCase().includes(term.toLowerCase()) ||
+                    term.toLowerCase().includes(e.name.toLowerCase())
+        )
+      );
+      const hasProductRangeMatch = c.productRange.some(
+        (p: string) => searchTerms.some(
+          (term) => p.toLowerCase().includes(term.toLowerCase()) ||
+                    term.toLowerCase().includes(p.toLowerCase())
+        )
+      );
+
+      if (hasEquipmentMatch) reason = 'equipment';
+      else if (hasProductRangeMatch) reason = 'productRange';
+
+      return {
+        id: c.id,
+        name: c.name,
+        country: c.country,
+        countryCode: c.countryCode,
+        threatLevel: c.threatLevel,
+        priceSegment: c.priceSegment,
+        reason,
+        _count: c._count,
+      };
+    });
+
+    return results;
   }
 
   // ==========================================

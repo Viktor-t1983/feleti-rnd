@@ -28,7 +28,7 @@ export const config = {
   jwt: {
     secret: requireEnvWithLength('JWT_SECRET', 32),
     refreshSecret: requireEnvWithLength('JWT_REFRESH_SECRET', 32),
-    expiresIn: process.env['JWT_EXPIRES_IN'] || '15m',
+    expiresIn: process.env['JWT_EXPIRES_IN'] || '2h',
     refreshExpiresIn: process.env['JWT_REFRESH_EXPIRES_IN'] || '7d',
   },
   cors: {

@@ -18,9 +18,116 @@ import {
   useProject,
   useProjectMembers,
   useUpdateProject,
+  useProjectCompetitors,
+  useAddProjectCompetitor,
+  useRemoveProjectCompetitor,
 } from '../hooks/useProjects';
+import { api } from '../lib/api';
 import { ru } from '../i18n/ru';
 import { UpdateProjectInput, type Project } from '../types/project.types';
+
+interface Competitor {
+  id: string;
+  name: string;
+  country: string | null;
+  countryCode: string | null;
+}
+
+function AddCompetitorForm({
+  existingCompetitorIds,
+  onAdd,
+  isAdding,
+}: {
+  existingCompetitorIds: string[];
+  onAdd: (competitorId: string) => void;
+  isAdding: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const loadCompetitors = async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.get<{ competitors: Competitor[] }>('/api/knowledge/competitors', {
+        params: { limit: 100 },
+      });
+      const data = response.data as { competitors?: Competitor[] };
+      const allCompetitors = data.competitors || [];
+      setCompetitors(allCompetitors.filter((c) => !existingCompetitorIds.includes(c.id)));
+    } catch (error) {
+      console.error('Failed to load competitors:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpen = () => {
+    setIsOpen(true);
+    loadCompetitors();
+  };
+
+  const filteredCompetitors = competitors.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  if (isOpen) {
+    return (
+      <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div className="flex gap-2 mb-3">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск конкурента..."
+            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-800 dark:text-white"
+          />
+          <button
+            onClick={() => setIsOpen(false)}
+            className="px-3 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+        {isLoading ? (
+          <p className="text-gray-500 dark:text-gray-400">Загрузка...</p>
+        ) : filteredCompetitors.length > 0 ? (
+          <div className="max-h-48 overflow-y-auto space-y-2">
+            {filteredCompetitors.map((competitor) => (
+              <button
+                key={competitor.id}
+                onClick={() => {
+                  onAdd(competitor.id);
+                  setIsOpen(false);
+                  setSearch('');
+                }}
+                disabled={isAdding}
+                className="w-full text-left p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg flex items-center justify-between"
+              >
+                <span className="font-medium text-gray-900 dark:text-white">{competitor.name}</span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {competitor.country || '—'}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400">Конкуренты не найдены</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleOpen}
+      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+    >
+      + Добавить конкурента
+    </button>
+  );
+}
 
 export function ProjectDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +140,9 @@ export function ProjectDetailPage(): JSX.Element {
   > = useUpdateProject();
   const deleteProject: UseMutationResult<string, unknown, string> = useDeleteProject();
   const { data: members } = useProjectMembers(id || '');
+  const { data: competitors, isLoading: competitorsLoading } = useProjectCompetitors(id || '');
+  const addCompetitor = useAddProjectCompetitor();
+  const removeCompetitor = useRemoveProjectCompetitor();
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -292,6 +402,65 @@ export function ProjectDetailPage(): JSX.Element {
             </div>
           </div>
         ) : null}
+
+        {/* Competitors */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sm:p-8 mt-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            Конкуренты
+          </h2>
+          
+          {competitorsLoading ? (
+            <p className="text-gray-500 dark:text-gray-400">Загрузка...</p>
+          ) : competitors && competitors.length > 0 ? (
+            <div className="space-y-3">
+              {competitors.map((link) => (
+                <div
+                  key={link.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md"
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-medium mr-3">
+                      {link.competitor.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {link.competitor.name}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {link.competitor.country || 'Страна не указана'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      removeCompetitor.mutate({
+                        projectId: project.id,
+                        competitorId: link.competitorId,
+                      });
+                    }}
+                    disabled={removeCompetitor.isPending}
+                    className="px-3 py-1 text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">Нет связанных конкурентов</p>
+          )}
+
+          <AddCompetitorForm
+            existingCompetitorIds={competitors?.map(c => c.competitorId) || []}
+            onAdd={(competitorId) => {
+              addCompetitor.mutate({
+                projectId: project.id,
+                competitorId,
+              });
+            }}
+            isAdding={addCompetitor.isPending}
+          />
+        </div>
 
         {/* Comments */}
         <CommentSection projectId={project.id} />

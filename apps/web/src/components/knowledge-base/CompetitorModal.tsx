@@ -100,6 +100,8 @@ export const CompetitorModal = ({ isOpen, onClose, competitor, mode }: Competito
     isActive: true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSearchingAI, setIsSearchingAI] = useState(false);
+  const [aiSearchError, setAiSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     if (competitor && mode === 'edit') {
@@ -167,6 +169,53 @@ export const CompetitorModal = ({ isOpen, onClose, competitor, mode }: Competito
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const handleAISearch = async () => {
+    if (formData.name.length < 3) return;
+    
+    setIsSearchingAI(true);
+    setAiSearchError(null);
+    
+    try {
+      const { data } = await api.post('/api/knowledge/competitors/ai-search', {
+        name: formData.name,
+        country: formData.countryCode || undefined,
+      });
+      
+      if (data.error) {
+        setAiSearchError(data.error);
+        return;
+      }
+      
+      // Fill form with AI data
+      if (data.name) handleChange('name', data.name);
+      if (data.legalName) handleChange('legalName', data.legalName);
+      if (data.website) handleChange('website', data.website);
+      if (data.email) handleChange('email', data.email);
+      if (data.phone) handleChange('phone', data.phone);
+      if (data.address) handleChange('address', data.address);
+      if (data.country) handleChange('country', data.country);
+      if (data.countryCode) handleChange('countryCode', data.countryCode);
+      if (data.foundedYear) handleChange('foundedYear', String(data.foundedYear));
+      if (data.employeesCount) handleChange('employeesCount', String(data.employeesCount));
+      if (data.annualRevenue) handleChange('annualRevenue', String(data.annualRevenue));
+      if (data.marketShare) handleChange('marketShare', String(data.marketShare));
+      if (data.strengths && Array.isArray(data.strengths)) {
+        handleChange('strengths', data.strengths.join('\n'));
+      }
+      if (data.weaknesses && Array.isArray(data.weaknesses)) {
+        handleChange('weaknesses', data.weaknesses.join('\n'));
+      }
+      if (data.productRange && Array.isArray(data.productRange)) {
+        handleChange('productRange', data.productRange.join('\n'));
+      }
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setAiSearchError(error.response?.data?.error || 'Ошибка при поиске');
+    } finally {
+      setIsSearchingAI(false);
     }
   };
 
@@ -242,14 +291,33 @@ export const CompetitorModal = ({ isOpen, onClose, competitor, mode }: Competito
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Название <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                className={inputClass('name')}
-                placeholder="Nowicki"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  className={inputClass('name')}
+                  placeholder="Nowicki"
+                />
+                <button
+                  type="button"
+                  onClick={handleAISearch}
+                  disabled={isSearchingAI || formData.name.length < 3}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-sm font-medium whitespace-nowrap"
+                  title="Найти информацию через AI"
+                >
+                  {isSearchingAI ? (
+                    <>
+                      <span className="animate-spin">⟳</span>
+                      Поиск...
+                    </>
+                  ) : (
+                    <>🤖 Найти</>
+                  )}
+                </button>
+              </div>
               {errors['name'] && <p className="text-xs text-red-500">{errors['name']}</p>}
+              {aiSearchError && <p className="text-xs text-red-500">{aiSearchError}</p>}
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">

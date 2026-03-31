@@ -162,6 +162,80 @@ export function projectsRoutes(fastify: FastifyInstance): void {
     }
   );
 
+  // Get project competitors
+  fastify.get(
+    '/projects/:id/competitors',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request: AuthenticatedRequest, reply) => {
+      const { id } = projectIdParamSchema.parse(request.params);
+      const competitors = await prisma.competitorProject.findMany({
+        where: { projectId: id },
+        include: {
+          competitor: true,
+        },
+      });
+      return reply.send(competitors);
+    }
+  );
+
+  // Add competitor to project
+  fastify.post(
+    '/projects/:id/competitors',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request: AuthenticatedRequest, reply) => {
+      const { id: projectId } = projectIdParamSchema.parse(request.params);
+      const { competitorId, notes } = request.body as { competitorId: string; notes?: string };
+
+      if (!competitorId) {
+        return reply.status(400).send({ error: 'competitorId обязателен' });
+      }
+
+      const competitor = await prisma.competitorProject.create({
+        data: {
+          projectId,
+          competitorId,
+          notes,
+        },
+        include: {
+          competitor: true,
+        },
+      });
+
+      return reply.status(201).send(competitor);
+    }
+  );
+
+  // Remove competitor from project
+  fastify.delete(
+    '/projects/:id/competitors/:competitorId',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request: AuthenticatedRequest, reply) => {
+      const params = projectIdParamSchema.parse(request.params);
+      const competitorId = (request.params as { competitorId?: string }).competitorId;
+
+      if (!competitorId) {
+        return reply.status(400).send({ error: 'competitorId обязателен' });
+      }
+
+      try {
+        await prisma.competitorProject.delete({
+          where: {
+            projectId_competitorId: { projectId: params.id, competitorId },
+          },
+        });
+      } catch {
+        return reply.status(404).send({ error: 'Связь не найдена' });
+      }
+      return reply.status(204).send();
+    }
+  );
+
   // Export project as PDF
   fastify.get(
     '/projects/:id/pdf',

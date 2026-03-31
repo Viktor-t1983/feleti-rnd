@@ -1,6 +1,9 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { prisma } from '../../lib/prisma';
 import { AdminService } from './admin.service';
+import { $Enums } from '@prisma/client';
+
+type EquipmentCategory = $Enums.EquipmentCategory;
 
 const adminService = new AdminService();
 
@@ -100,5 +103,48 @@ export async function adminRoutes(fastify: FastifyInstance) {
         error: err.message,
       });
     }
+  });
+
+  // GET /admin/equipment-types - Get all equipment types
+  fastify.get('/admin/equipment-types', { preHandler }, async (_, reply) => {
+    const equipmentTypes = await prisma.equipmentType.findMany({
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        category: true,
+        isActive: true,
+        _count: { select: { templateBlocks: true } },
+      },
+      orderBy: { name: 'asc' },
+    });
+    return reply.send({ success: true, data: equipmentTypes });
+  });
+
+  // POST /admin/equipment-types - Create equipment type
+  fastify.post('/admin/equipment-types', { preHandler }, async (request, reply) => {
+    const { code, name, category, description } = request.body as {
+      code: string;
+      name: string;
+      category: string;
+      description?: string;
+    };
+    const userId = request.user?.userId;
+
+    if (!userId) {
+      return reply.code(401).send({ error: 'Требуется аутентификация' });
+    }
+
+    const equipmentType = await prisma.equipmentType.create({
+      data: {
+        code,
+        name,
+        category: category as EquipmentCategory,
+        description,
+        createdById: userId,
+      },
+    });
+
+    return reply.code(201).send({ success: true, data: equipmentType });
   });
 }

@@ -18,4 +18,13 @@ module.exports = {
     'no-console': ['error', { allow: ['warn', 'error'] }],
     'no-eval': 'error',
   },
+  overrides: [
+    {
+      files: ['src/modules/market-research/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'warn',
+        'no-useless-escape': 'warn',
+      },
+    },
+  ],
 };

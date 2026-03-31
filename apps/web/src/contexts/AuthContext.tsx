@@ -58,8 +58,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      void loadUser().finally(() => setIsLoading(false));
+      void loadUser()
+        .catch(() => {
+          localStorage.removeItem('accessToken');
+          setUser(null);
+        })
+        .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
@@ -67,14 +71,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
 
   const login = async (email: string, password: string): Promise<void> => {
     try {
+      setIsLoading(true);
       const response = await api.post<LoginResponse>('/api/auth/login', { email, password });
       const { accessToken, user: userData }: LoginResponse = response.data;
 
       localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('accessToken', accessToken);
       setUser(userData);
     } catch (error) {
       console.error('[AuthContext] Login error:', error);
+      setIsLoading(false);
       throw error;
     }
   };

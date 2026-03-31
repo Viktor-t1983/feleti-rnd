@@ -1,0 +1,456 @@
+﻿/**
+ * Charter Service
+ * Business logic for charter templates and project blocks
+ */
+
+import type { Prisma, Project, TemplateBlock, ProjectBlock, $Enums } from '@prisma/client';
+
+import { prisma } from '../../lib/prisma';
+import { logger } from '../../utils/logger';
+import { getSettingByKey } from '../settings/settings.service';
+import {
+  getBlockAIConfig,
+  getProviderByCode,
+  getProviderApiKey,
+  getNextFallbackProvider,
+  isAutoFallbackEnabled,
+  getResearchProvider,
+} from '../ai/ai-providers.service';
+
+// Extended types for includes
+type ProjectWithCharter = Project & {
+  equipmentTypes?: Array<{
+    id: string;
+    templateBlocks: TemplateBlock[];
+  }>;
+  blocks?: Array<ProjectBlock & { templateBlock: TemplateBlock }>;
+};
+
+export class CharterService {
+  // ==========================================
+  // TEMPLATE BLOCKS (РґР»СЏ СЂРµРґР°РєС‚РѕСЂР° С€Р°Р±Р»РѕРЅРѕРІ - Р°РґРјРёРЅ)
+  // ==========================================
+
+  async getTemplateBlocks(equipmentTypeId: string): Promise<TemplateBlock[]> {
+    logger.debug({ equipmentTypeId }, 'Getting template blocks');
+
+    return prisma.templateBlock.findMany({
+      where: { equipmentTypeId },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  async createTemplateBlock(data: {
+    equipmentTypeId: string;
+    name: string;
+    icon: string;
+    description?: string;
+    blockType: string;
+    isRequired?: boolean;
+    sortOrder?: number;
+    aiEnabled?: boolean;
+    aiPrompt?: string;
+    aiModel?: string;
+    fieldSchema?: unknown;
+    defaultValues?: unknown;
+  }): Promise<TemplateBlock> {
+    logger.debug({ name: data.name }, 'Creating template block');
+
+    const block = await prisma.templateBlock.create({
+      data: {
+        equipmentTypeId: data.equipmentTypeId,
+        name: data.name,
+        icon: data.icon,
+        description: data.description,
+        blockType: data.blockType as $Enums.CharterBlockType,
+        isRequired: data.isRequired ?? true,
+        sortOrder: data.sortOrder ?? 0,
+        aiEnabled: data.aiEnabled ?? true,
+        aiPrompt: data.aiPrompt,
+        aiModel: data.aiModel ?? 'deepseek',
+        fieldSchema: data.fieldSchema ? (data.fieldSchema as Prisma.JsonObject) : {},
+        defaultValues: data.defaultValues as Prisma.JsonObject | undefined,
+      },
+    });
+
+    logger.info({ id: block.id, name: block.name }, 'Template block created');
+    return block;
+  }
+
+  async updateTemplateBlock(
+    id: string,
+    data: {
+      name?: string;
+      icon?: string;
+      description?: string;
+      blockType?: string;
+      isRequired?: boolean;
+      sortOrder?: number;
+      aiEnabled?: boolean;
+      aiPrompt?: string;
+      aiModel?: string;
+      fieldSchema?: unknown;
+      defaultValues?: unknown;
+    }
+  ): Promise<TemplateBlock> {
+    logger.debug({ id }, 'Updating template block');
+
+    const block = await prisma.templateBlock.update({
+      where: { id },
+      data: {
+        name: data.name,
+        icon: data.icon,
+        description: data.description,
+        blockType: data.blockType as $Enums.CharterBlockType | undefined,
+        isRequired: data.isRequired,
+        sortOrder: data.sortOrder,
+        aiEnabled: data.aiEnabled,
+        aiPrompt: data.aiPrompt,
+        aiModel: data.aiModel,
+        fieldSchema: data.fieldSchema as Prisma.JsonObject | undefined,
+        defaultValues: data.defaultValues as Prisma.JsonObject | undefined,
+      },
+    });
+
+    logger.info({ id: block.id, name: block.name }, 'Template block updated');
+    return block;
+  }
+
+  async deleteTemplateBlock(id: string): Promise<void> {
+    logger.debug({ id }, 'Deleting template block');
+    await prisma.templateBlock.delete({ where: { id } });
+    logger.info({ id }, 'Template block deleted');
+  }
+
+  // ==========================================
+  // PROJECT BLOCKS (РґР»СЏ Р·Р°РїРѕР»РЅРµРЅРёСЏ СѓСЃС‚Р°РІР° - РёРЅР¶РµРЅРµСЂ)
+  // ==========================================
+
+  async getProjectBlocks(projectId: string): Promise<
+    Array<ProjectBlock & { templateBlock: TemplateBlock }>
+  > {
+    logger.debug({ projectId }, 'Getting project blocks');
+
+    return prisma.projectBlock.findMany({
+      where: { projectId },
+      include: { templateBlock: true },
+      orderBy: { templateBlock: { sortOrder: 'asc' } },
+    });
+  }
+
+  async updateProjectBlock(
+    blockId: string,
+    data: {
+      data?: Record<string, unknown>;
+      aiHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+      aiFlags?: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
+      status?: $Enums.ProjectBlockStatus;
+      updatedBy: string;
+    }
+  ): Promise<ProjectBlock> {
+    logger.debug({ blockId }, 'Updating project block');
+
+    const block = await prisma.projectBlock.update({
+      where: { id: blockId },
+      data: {
+        data: data.data as Prisma.JsonObject | undefined,
+        aiHistory: data.aiHistory as Prisma.JsonArray | undefined,
+        aiFlags: data.aiFlags as Prisma.JsonArray | undefined,
+        status: data.status,
+        updatedBy: data.updatedBy,
+        updatedAt: new Date(),
+      },
+    });
+
+    logger.info({ blockId, status: data.status }, 'Project block updated');
+    return block;
+  }
+
+  // ==========================================
+  // PROJECT CHARTER (РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ Р±Р»РѕРєРѕРІ)
+  // ==========================================
+
+  async initializeProjectCharter(projectId: string): Promise<void> {
+    logger.debug({ projectId }, 'Initializing project charter blocks');
+
+    // РџРѕР»СѓС‡Р°РµРј РїСЂРѕРµРєС‚ СЃ С‚РёРїР°РјРё РѕР±РѕСЂСѓРґРѕРІР°РЅРёСЏ
+    const project = (await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        equipmentTypes: {
+          include: {
+            templateBlocks: {
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+        },
+      },
+    })) as ProjectWithCharter | null;
+
+    if (!project) {
+      throw new Error('РџСЂРѕРµРєС‚ РЅРµ РЅР°Р№РґРµРЅ');
+    }
+
+    // Р”Р»СЏ РєР°Р¶РґРѕРіРѕ С‚РёРїР° РѕР±РѕСЂСѓРґРѕРІР°РЅРёСЏ СЃРѕР·РґР°С‘Рј Р±Р»РѕРєРё
+    for (const equipmentType of project.equipmentTypes || []) {
+      for (const template of equipmentType.templateBlocks) {
+        // РџСЂРѕРІРµСЂСЏРµРј, РЅРµ СЃРѕР·РґР°РЅ Р»Рё СѓР¶Рµ Р±Р»РѕРє
+        const existing = await prisma.projectBlock.findFirst({
+          where: {
+            projectId,
+            templateBlockId: template.id,
+          },
+        });
+
+        if (!existing) {
+          await prisma.projectBlock.create({
+            data: {
+              projectId,
+              templateBlockId: template.id,
+              data: template.defaultValues || {},
+              updatedBy: project.ownerId,
+            },
+          });
+          logger.debug(
+            { projectId, templateId: template.id },
+            'Created project block from template'
+          );
+        }
+      }
+    }
+
+    logger.info({ projectId }, 'Project charter initialized');
+  }
+
+  // ==========================================
+  // AI CHAT (СЃ РјСѓР»СЊС‚Рё-РїСЂРѕРІР°Р№РґРµСЂРЅРѕР№ РїРѕРґРґРµСЂР¶РєРѕР№ Рё fallback)
+  // ==========================================
+
+  private async callAIProvider(
+    providerCode: string,
+    systemPrompt: string,
+    messages: Array<{ role: string; content: string }>,
+    maxTokens: number
+  ): Promise<{ text: string; provider: string }> {
+    const provider = await getProviderByCode(providerCode);
+    if (!provider) {
+      throw new Error(`РџСЂРѕРІР°Р№РґРµСЂ ${providerCode} РЅРµ РЅР°Р№РґРµРЅ`);
+    }
+
+    const apiKey = await getProviderApiKey(providerCode);
+    if (!apiKey) {
+      throw new Error(`API РєР»СЋС‡ РґР»СЏ ${providerCode} РЅРµ РЅР°СЃС‚СЂРѕРµРЅ`);
+    }
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    let requestBody: Record<string, unknown>;
+
+    // Anthropic (Claude) uses different API format
+    if (providerCode === 'claude' || providerCode === 'anthropic') {
+      headers['x-api-key'] = apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      requestBody = {
+        model: provider.defaultModel,
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      };
+    } else {
+      // OpenAI-compatible format (DeepSeek, Kimi, Qwen, GLM, MiniMax, Perplexity)
+      headers['Authorization'] = `Bearer ${apiKey}`;
+      requestBody = {
+        model: provider.defaultModel,
+        max_tokens: maxTokens,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages,
+        ],
+      };
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+    try {
+      const response = await fetch(provider.apiEndpoint + '/chat/completions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = (await response.json()) as Record<string, unknown>;
+
+      // Parse response
+      let text = '';
+      if (providerCode === 'claude' || providerCode === 'anthropic') {
+        const content = data['content'] as Array<{ text?: string }> | undefined;
+        text = content?.[0]?.text || '';
+      } else {
+        const choices = data['choices'] as Array<{
+          message?: { content?: string };
+        }> | undefined;
+        text = choices?.[0]?.message?.content || '';
+      }
+
+      return { text, provider: providerCode };
+    } catch (error) {
+      clearTimeout(timeout);
+      throw error;
+    }
+  }
+
+  private parseFlags(
+    text: string
+  ): {
+    cleanText: string;
+    flags: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
+  } {
+    const flagRegex = /FLAG:(red|yellow|green):([^:]+):(.+?)(?=FLAG:|$)/g;
+    const flags: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }> = [];
+    let match;
+
+    while ((match = flagRegex.exec(text)) !== null) {
+      if (match[1] && match[2] && match[3]) {
+        flags.push({
+          level: match[1] as 'red' | 'yellow' | 'green',
+          title: match[2].trim(),
+          text: match[3].trim(),
+        });
+      }
+    }
+
+    const cleanText = text.replace(flagRegex, '').trim();
+    return { cleanText, flags };
+  }
+
+  async aiChat(
+    blockId: string,
+    _userId: string,
+    message: string,
+    history: Array<{ role: 'user' | 'assistant'; content: string }>,
+    blockContext?: Record<string, unknown>
+  ): Promise<{
+    text: string;
+    flags?: Array<{ level: 'red' | 'yellow' | 'green'; title: string; text: string }>;
+    provider?: string;
+  }> {
+    logger.debug({ blockId }, 'AI chat started');
+
+    // РџРѕР»СѓС‡Р°РµРј Р±Р»РѕРє СЃ РєРѕРЅС„РёРіСѓСЂР°С†РёРµР№ AI
+    const block = await prisma.projectBlock.findUnique({
+      where: { id: blockId },
+      include: { templateBlock: true },
+    });
+
+    if (!block) {
+      throw new Error('Р‘Р»РѕРє РЅРµ РЅР°Р№РґРµРЅ');
+    }
+
+    // РџРѕР»СѓС‡Р°РµРј AI РєРѕРЅС„РёРі РґР»СЏ Р±Р»РѕРєР°
+    const aiConfig = await getBlockAIConfig(block.templateBlockId);
+
+    // РћРїСЂРµРґРµР»СЏРµРј РїСЂРѕРІР°Р№РґРµСЂР° РґР»СЏ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ
+    let primaryProvider = aiConfig?.primaryProvider || block.templateBlock?.aiModel || 'deepseek';
+    const fallbackProvider = aiConfig?.fallbackProvider;
+    const enableResearch = aiConfig?.enableResearch || false;
+    const maxTokens = 4096;
+
+    // Р•СЃР»Рё РІРєР»СЋС‡РµРЅ research Рё РЅСѓР¶РµРЅ РІРµР±-РїРѕРёСЃРє
+    let enrichedMessage = message;
+    if (enableResearch) {
+      const researchProviderCode = await getResearchProvider();
+      const researchProvider = await getProviderByCode(researchProviderCode);
+
+      if (researchProvider?.capabilities?.search || researchProvider?.capabilities?.research) {
+        try {
+          // Р”РµР»Р°РµРј research-Р·Р°РїСЂРѕСЃ
+          const researchResult = await this.callAIProvider(
+            researchProviderCode,
+            'РўС‹ РёСЃСЃР»РµРґРѕРІР°С‚РµР»СЊСЃРєРёР№ Р°СЃСЃРёСЃС‚РµРЅС‚. РќР°Р№РґРё Р°РєС‚СѓР°Р»СЊРЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ РїРѕ Р·Р°РїСЂРѕСЃСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.',
+            [{ role: 'user', content: message }],
+            2000
+          );
+          enrichedMessage = `${message}\n\n[Р”Р°РЅРЅС‹Рµ РёР· РёСЃСЃР»РµРґРѕРІР°РЅРёСЏ]: ${researchResult.text}`;
+          logger.debug({ blockId }, 'Research data added to message');
+        } catch (error) {
+          logger.warn({ blockId, error }, 'Research failed, continuing without it');
+        }
+      }
+    }
+
+    // Р¤РѕСЂРјРёСЂСѓРµРј СЃРёСЃС‚РµРјРЅС‹Р№ РїСЂРѕРјРїС‚
+    const basePrompt =
+      block.templateBlock?.aiPrompt ||
+      'РўС‹ AI-Р°СЃСЃРёСЃС‚РµРЅС‚ РґР»СЏ R&D РїСЂРѕРµРєС‚РѕРІ FELETI. РџРѕРјРѕРіР°Р№ РёРЅР¶РµРЅРµСЂСѓ Р·Р°РїРѕР»РЅСЏС‚СЊ СѓСЃС‚Р°РІ. РћС‚РІРµС‡Р°Р№ РЅР° СЂСѓСЃСЃРєРѕРј.';
+
+    const contextStr = blockContext ? JSON.stringify(blockContext, null, 2) : '{}';
+    const systemPrompt = `${basePrompt}\n\nРљРѕРЅС‚РµРєСЃС‚ Р±Р»РѕРєР°:\n${contextStr}\n\nРСЃРїРѕР»СЊР·СѓР№ С„Р»Р°РіРё РґР»СЏ СЂРёСЃРєРѕРІ: FLAG:red:Р—Р°РіРѕР»РѕРІРѕРє:РћРїРёСЃР°РЅРёРµ РёР»Рё FLAG:yellow:... РёР»Рё FLAG:green:...`;
+
+    const messages = [...history, { role: 'user', content: enrichedMessage }];
+
+    // РџСЂРѕР±СѓРµРј РѕСЃРЅРѕРІРЅРѕРіРѕ РїСЂРѕРІР°Р№РґРµСЂР°
+    const providersToTry: string[] = [primaryProvider];
+
+    // Р”РѕР±Р°РІР»СЏРµРј fallback РµСЃР»Рё РІРєР»СЋС‡РµРЅ
+    const autoFallback = await isAutoFallbackEnabled();
+    if (autoFallback && fallbackProvider) {
+      providersToTry.push(fallbackProvider);
+    }
+
+    // РџСЂРѕР±СѓРµРј СЃР»РµРґСѓСЋС‰РёР№ РІ С†РµРїРѕС‡РєРµ fallback РµСЃР»Рё РѕСЃРЅРѕРІРЅРѕР№ РЅРµ СЃСЂР°Р±РѕС‚Р°Р»
+    if (autoFallback) {
+      const nextFallback = await getNextFallbackProvider(primaryProvider);
+      if (nextFallback && !providersToTry.includes(nextFallback)) {
+        providersToTry.push(nextFallback);
+      }
+    }
+
+    let lastError: Error | null = null;
+
+    for (const providerCode of providersToTry) {
+      try {
+        logger.debug({ blockId, provider: providerCode }, 'Trying AI provider');
+
+        const { text, provider } = await this.callAIProvider(
+          providerCode,
+          systemPrompt,
+          messages,
+          maxTokens
+        );
+
+        const { cleanText, flags } = this.parseFlags(text);
+
+        logger.info(
+          { blockId, provider, flags: flags.length, fallbackUsed: providerCode !== primaryProvider },
+          'AI chat completed'
+        );
+
+        return {
+          text: cleanText,
+          flags,
+          provider,
+        };
+      } catch (error) {
+        lastError = error as Error;
+        logger.warn(
+          { blockId, provider: providerCode, error: (error as Error).message },
+          'AI provider failed, trying fallback'
+        );
+        continue;
+      }
+    }
+

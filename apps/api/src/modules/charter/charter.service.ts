@@ -273,7 +273,7 @@ export class CharterService {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout
+    const timeout = setTimeout(() => controller.abort(), 300000); // 300s timeout for long AI requests
 
     try {
       const response = await fetch(provider.apiEndpoint + '/chat/completions', {
@@ -351,11 +351,88 @@ export class CharterService {
     // Получаем блок с конфигурацией AI
     const block = await prisma.projectBlock.findUnique({
       where: { id: blockId },
-      include: { templateBlock: true },
+      include: { 
+        templateBlock: true,
+        project: {
+          select: { id: true, name: true }
+        }
+      },
     });
 
     if (!block) {
       throw new Error('Блок не найден');
+    }
+
+    // Формируем контекст из предыдущих блоков
+    let charterContext = '';
+    const currentSortOrder = block.templateBlock.sortOrder;
+    logger.info({ blockId, projectId: block.projectId, sortOrder: currentSortOrder }, 'Loading charter context');
+
+    if (currentSortOrder > 0) {
+      const previousBlocks = await prisma.projectBlock.findMany({
+        where: {
+          projectId: block.projectId,
+          templateBlock: {
+            sortOrder: { lt: currentSortOrder },
+          },
+        },
+        include: {
+          templateBlock: {
+            select: { name: true, sortOrder: true },
+          },
+        },
+        orderBy: {
+          templateBlock: { sortOrder: 'asc' },
+        },
+      });
+
+      logger.info({ blockId, previousBlocksCount: previousBlocks.length }, 'Found previous blocks');
+      
+      if (previousBlocks.length > 0) {
+        const projectName = block.project?.name || 'Проект';
+        
+        const contextParts = previousBlocks.map((pb) => {
+          const blockName = pb.templateBlock.name;
+          const data = pb.data as Record<string, unknown>;
+          const history = pb.aiHistory as Array<{ role: string; content: string }>;
+          
+          // Формируем краткое описание данных блока
+          let dataSummary = '';
+          if (data && Object.keys(data).length > 0) {
+            const nonEmptyFields = Object.entries(data)
+              .filter(([_, v]) => v !== null && v !== '' && v !== undefined)
+              .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+              .slice(0, 5);
+            if (nonEmptyFields.length > 0) {
+              dataSummary = `\n  Данные: ${nonEmptyFields.join('; ')}`;
+            }
+          }
+          
+          // Берём последние 2-3 сообщения из истории
+          let chatSummary = '';
+          if (history && history.length > 0) {
+            const recentMessages = history.slice(-3);
+            chatSummary = recentMessages
+              .filter((m) => m.role === 'assistant' && m.content)
+              .map((m) => m.content.slice(0, 200))
+              .join('; ');
+            if (chatSummary) {
+              chatSummary = `\n  AI: ${chatSummary}...`;
+            }
+          }
+          
+          // Пропускаем пустые блоки
+          if (!dataSummary && !chatSummary) {
+            return null;
+          }
+          
+          return `Блок "${blockName}":${dataSummary}${chatSummary}`;
+        }).filter(Boolean);
+
+        if (contextParts.length > 0) {
+          charterContext = `\n\nКОНТЕКСТ УСТАВА ПРОЕКТА "${projectName}":\n${contextParts.join('\n\n')}\n\nИспользуй эти данные для ответов. Не повторяй уже выясненную информацию — опирайся на неё.`;
+        }
+      }
     }
 
     // Получаем AI конфиг для блока
@@ -396,7 +473,15 @@ export class CharterService {
       'Ты AI-ассистент для R&D проектов FELETI. Помогай инженеру заполнять устав. Отвечай на русском.';
 
     const contextStr = blockContext ? JSON.stringify(blockContext, null, 2) : '{}';
-    const systemPrompt = `${basePrompt}\n\nКонтекст блока:\n${contextStr}\n\nИспользуй флаги для рисков: FLAG:red:Заголовок:Описание или FLAG:yellow:... или FLAG:green:...`;
+    let systemPrompt = `${basePrompt}\n\nКонтекст блока:\n${contextStr}\n\nИспользуй флаги для рисков: FLAG:red:Заголовок:Описание или FLAG:yellow:... или FLAG:green:...`;
+    
+    // Добавляем контекст из предыдущих блоков устава
+    if (charterContext) {
+      systemPrompt = `${charterContext}\n\n${systemPrompt}`;
+      logger.info({ blockId, contextLength: charterContext.length }, 'Charter context added to prompt');
+    } else {
+      logger.info({ blockId, sortOrder: currentSortOrder }, 'No charter context - first block or empty');
+    }
 
     const messages = [...history, { role: 'user', content: enrichedMessage }];
 

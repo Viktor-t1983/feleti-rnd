@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -186,7 +187,6 @@ model Competitor {
   website     String?
   strengths   Json
   weaknesses  Json
-  projectLinks CompetitorProject[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -196,7 +196,7 @@ model CompetitorProject {
   projectId     String
   competitorId  String
   project       Project  @relation(fields: [projectId], references: [id])
-  competitor    Competitor @relation(fields: [competitorId], references: [id])
+  competitor    CompetitorDetail @relation(fields: [competitorId], references: [id])
   notes         String?
   createdAt     DateTime @default(now())
 
@@ -1135,6 +1135,9 @@ model CompetitorDetail {
   markets         CompetitorMarket[]
   equipment       CompetitorEquipment[]
   
+  // Связь с проектами
+  projectLinks    CompetitorProject[]
+  
   // Статус
   isActive        Boolean         @default(true)
   threatLevel     String          @default("medium") // low, medium, high
@@ -1253,6 +1256,7 @@ model TemplateBlock {
   defaultValues   Json?
 
   projectBlocks   ProjectBlock[]
+  aiAssignments   BlockAIAssignment[]
 
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -1379,7 +1383,81 @@ model SystemSetting {
 }
 
 // ==========================================
-// ОБНОВЛЕНИЯ СУЩЕСТВУЮЩИХ МОДЕЛЕЙ
+// AI PROVIDER MODELS
 // ==========================================
-// Note: User and Project models are updated with Engineering Platform relations
-// These relations are added to the existing models above:
+
+model AIProviderConfig {
+  id            String    @id @default(uuid())
+  providerCode  String    @unique
+  name          String
+  enabled       Boolean   @default(true)
+  priority      Int       @default(0)
+  apiEndpoint   String
+  defaultModel  String
+  maxTokens     Int?      
+  temperature   Float     @default(0.7)
+  capabilities  Json?     
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  provider      String?   @unique
+
+  @@map("ai_provider_configs")
+}
+
+model BlockAIAssignment {
+  id                 String          @id @default(uuid())
+  blockId            String?         @map("block_id")
+  templateBlockId    String?         @unique
+  templateBlock      TemplateBlock?  @relation(fields: [templateBlockId], references: [id])
+  taskType           String?         @map("task_type")
+  primaryProvider    String?
+  fallbackProvider   String?
+  customSystemPrompt String?         @db.Text
+  temperature        Float           @default(0.7)
+  enableResearch     Boolean         @default(false)
+  maxKbDocs          Int             @default(5)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@unique([blockId, taskType])
+  @@map("block_ai_assignments")
+}
+
+// ==========================================
+// MARKET RESEARCH MODELS
+// ==========================================
+
+model MarketResearchResult {
+  id           String   @id @default(uuid())
+  query        String
+  country      String
+  source       String
+  sourceType   String   @default("parser") // 'parser' | 'tavily'
+  confidence   String   @default("HIGH")    // 'HIGH' | 'MEDIUM' | 'LOW'
+  productName  String
+  productUrl   String
+  supplierName String?
+  price        Float?
+  currency     String?
+  rawData      Json?
+  scrapedAt    DateTime @default(now())
+  
+  @@index([query, country])
+  @@index([sourceType])
+  @@index([confidence])
+  @@index([supplierName])
+  @@map("market_research_results")
+}
+
+model MarketResearchCache {
+  id         String   @id @default(uuid())
+  query      String
+  country    String
+  results    Json
+  validUntil DateTime
+  createdAt  DateTime @default(now())
+  
+  @@unique([query, country])
+  @@index([validUntil])
+  @@map("market_research_cache")
+}

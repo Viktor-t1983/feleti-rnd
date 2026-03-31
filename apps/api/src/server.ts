@@ -115,6 +115,8 @@ import { notificationsRoutes } from './modules/notifications/notifications.route
 import { reportsRoutes } from './modules/reports/reports.routes';
 import { templatesRoutes } from './modules/templates/templates.routes';
 import settingsRoutes from './modules/settings/settings.routes';
+import { aiProviderRoutes } from './modules/ai';
+import { marketResearchRoutes } from './modules/market-research';
 void fastify.register(attachmentsRoutes, { prefix: '/api' });
 void fastify.register(analyticsRoutes, { prefix: '/api' });
 void fastify.register(reportsRoutes, { prefix: '/api' });
@@ -126,10 +128,17 @@ void fastify.register(activityLogRoutes, { prefix: '/api' });
 void fastify.register(templatesRoutes, { prefix: '/api' });
 void fastify.register(knowledgeBaseRoutes, { prefix: '/api' });
 void fastify.register(settingsRoutes, { prefix: '/api/settings' });
+void fastify.register(aiProviderRoutes, { prefix: '/api' });
+void fastify.register(marketResearchRoutes, { prefix: '/api' });
 void fastify.register(charterRoutes, { prefix: '/api' });
 
 // Health check endpoint
 fastify.get('/health', () => {
+  return { status: 'ok' };
+});
+
+// Health check for /api/health (nginx proxy)
+fastify.get('/api/health', () => {
   return { status: 'ok' };
 });
 

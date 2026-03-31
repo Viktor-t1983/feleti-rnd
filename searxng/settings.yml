@@ -1,0 +1,50 @@
+# SearXNG config for FELETI with UTF-8 fix
+use_default_settings: true
+
+server:
+  secret_key: "feleti-secret-key-change-in-production"
+  limiter: false
+  method: "POST"
+
+search:
+  formats:
+    - html
+    - json
+  default_lang: "ru-RU"
+  autocomplete: "google"
+  safe_search: 0
+
+ui:
+  default_theme: simple
+  default_locale: "ru"
+
+outgoing:
+  request_timeout: 15.0
+  useragent_suffix: ""
+
+# Enable specific engines
+engines:
+  - name: google
+    engine: google
+    disabled: false
+    
+  - name: yandex
+    engine: yandex
+    disabled: false
+    
+  - name: bing
+    engine: bing
+    disabled: false
+    
+  - name: duckduckgo
+    engine: duckduckgo
+    disabled: false
+    
+  - name: startpage
+    engine: startpage
+    disabled: false
+
+# Locale settings
+locales:
+  ru: "Русский"
+  en: "English"

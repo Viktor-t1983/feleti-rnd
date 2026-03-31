@@ -1,0 +1,42 @@
+// Market Research Models
+
+model MarketResearchResult {
+  id          String   @id @default(uuid())
+  query       String
+  country     String
+  source      String   // deal.by, avito, etc.
+  
+  // Product info
+  productName String
+  productUrl  String
+  
+  // Supplier info
+  supplierName String?
+  
+  // Raw data (for debugging)
+  rawData     Json?
+  
+  // Metadata
+  scrapedAt   DateTime @default(now())
+  
+  @@index([query, country])
+  @@index([supplierName])
+  @@map("market_research_results")
+}
+
+model MarketResearchCache {
+  id        String   @id @default(uuid())
+  query     String
+  country   String
+  
+  // Cached results (JSON array)
+  results   Json
+  
+  // TTL
+  validUntil DateTime
+  createdAt  DateTime @default(now())
+  
+  @@unique([query, country])
+  @@index([validUntil])
+  @@map("market_research_cache")
+}

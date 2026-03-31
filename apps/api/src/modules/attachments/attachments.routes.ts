@@ -28,21 +28,33 @@ export async function attachmentsRoutes(fastify: FastifyInstance) {
         projectId: string;
       };
       const userId = request.user.userId;
+      const userRole = request.user.role;
 
-      // Проверяем членство в проекте
-      const membership = await prisma.projectMember.findUnique({
-        where: {
-          projectId_userId: {
-            projectId,
-            userId,
+      // ADMIN имеет доступ ко всем проектам
+      if (userRole === 'Admin' || userRole === 'ADMIN') {
+        // OK
+      } else {
+        // Проверяем членство в проекте
+        const membership = await prisma.projectMember.findUnique({
+          where: {
+            projectId_userId: {
+              projectId,
+              userId,
+            },
           },
-        },
-      });
-
-      if (!membership) {
-        return reply.code(403).send({
-          error: 'Вы не являетесь членом проекта',
         });
+
+        // Владелец проекта тоже имеет доступ
+        const project = await prisma.project.findUnique({
+          where: { id: projectId },
+          select: { ownerId: true },
+        });
+
+        if (!membership && project?.ownerId !== userId) {
+          return reply.code(403).send({
+            error: 'Вы не являетесь членом проекта',
+          });
+        }
       }
 
       const data = await request.file();
@@ -78,24 +90,32 @@ export async function attachmentsRoutes(fastify: FastifyInstance) {
         projectId: string;
       };
       const userId = request.user.userId;
+      const userRole = request.user.role;
 
-      // Проверяем членство в проекте
-      const membership = await prisma.projectMember.findUnique({
-        where: {
-          projectId_userId: {
-            projectId,
-            userId,
+      // ADMIN имеет доступ ко всем проектам
+      let hasAccess = userRole === 'Admin' || userRole === 'ADMIN';
+
+      if (!hasAccess) {
+        // Проверяем членство в проекте
+        const membership = await prisma.projectMember.findUnique({
+          where: {
+            projectId_userId: {
+              projectId,
+              userId,
+            },
           },
-        },
-      });
+        });
 
-      // Владелец проекта тоже имеет доступ
-      const project = await prisma.project.findUnique({
-        where: { id: projectId },
-        select: { ownerId: true },
-      });
+        // Владелец проекта тоже имеет доступ
+        const project = await prisma.project.findUnique({
+          where: { id: projectId },
+          select: { ownerId: true },
+        });
 
-      if (!membership && project?.ownerId !== userId) {
+        hasAccess = !!membership || project?.ownerId === userId;
+      }
+
+      if (!hasAccess) {
         return reply.code(403).send({
           error: 'Вы не являетесь членом проекта',
         });

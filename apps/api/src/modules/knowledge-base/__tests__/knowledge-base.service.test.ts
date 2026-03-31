@@ -311,6 +311,14 @@ describe('KnowledgeBaseService', () => {
           isActive: true,
           priority: 10,
           _count: { competitors: 3, equipment: 5 },
+          flagEmoji: '🇩🇪',
+          industry: 'Manufacturing',
+          companiesCount: 150,
+          productionVolumeTons: 5000000,
+          exportVolumeTons: 2000000,
+          importVolumeTons: 1000000,
+          dataSource: 'FAO',
+          dataYear: 2024,
         },
       ];
 

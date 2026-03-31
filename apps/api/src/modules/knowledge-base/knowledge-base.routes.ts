@@ -6,6 +6,8 @@
 import { FastifyInstance } from 'fastify';
 
 import { knowledgeBaseService } from './knowledge-base.service';
+import { searchTavily } from '../market-research/tavily/tavily.service';
+import { getProviderByCode, getProviderApiKey } from '../ai/ai-providers.service';
 
 export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
   // ==========================================
@@ -372,6 +374,117 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
     return reply.code(201).send(competitor);
   });
 
+  // POST /api/knowledge/competitors/ai-search - AI-поиск конкурента через Tavily + DeepSeek
+  fastify.post<{
+    Body: {
+      name: string;
+      country?: string;
+    };
+  }>('/knowledge/competitors/ai-search', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { name, country } = request.body;
+
+    if (!name || name.length < 3) {
+      return reply.code(400).send({ error: 'Название компании должно содержать минимум 3 символа' });
+    }
+
+    // Check Tavily configuration
+    const tavilyResults = await searchTavily({
+      query: `${name} company meat processing equipment manufacturer`,
+      country: country,
+      maxResults: 10,
+      searchDepth: 'advanced',
+    });
+
+    if (tavilyResults.length === 0) {
+      return reply.code(404).send({ error: 'Tavily не настроен или не найдены результаты. Заполните данные вручную.' });
+    }
+
+    // Get AI provider (DeepSeek)
+    const provider = await getProviderByCode('deepseek');
+    if (!provider) {
+      return reply.code(500).send({ error: 'AI провайдер не настроен' });
+    }
+
+    const apiKey = await getProviderApiKey('deepseek');
+    if (!apiKey) {
+      return reply.code(500).send({ error: 'API ключ DeepSeek не настроен' });
+    }
+
+    // Build context from Tavily results
+    const context = tavilyResults
+      .slice(0, 5)
+      .map((r) => `Title: ${r.title}\nURL: ${r.url}\nContent: ${r.snippet}`)
+      .join('\n\n');
+
+    // Call DeepSeek to extract structured data
+    const systemPrompt = `Ты эксперт по извлечению структурированных данных о компаниях из поисковых результатов.
+Извлеки информацию о компании и верни JSON со следующими полями:
+- name: название компании (оригинальное название)
+- legalName: юридическое название (если есть)
+- website: официальный сайт (полный URL)
+- email: email (если есть)
+- phone: телефон (если есть)
+- address: адрес (если есть)
+- country: страна (на русском языке)
+- countryCode: код страны (2 буквы)
+- foundedYear: год основания (число, если известно)
+- employeesCount: численность сотрудников (число, если известно)
+- annualRevenue: годовой оборот в млн EUR (число, если известно)
+- marketShare: доля рынка в % (число, если известно)
+- strengths: массив сильных сторон компании (НА РУССКОМ ЯЗЫКЕ)
+- weaknesses: массив слабых сторон компании (НА РУССКОМ ЯЗЫКЕ)
+- productRange: массив продуктов/оборудования (НА РУССКОМ ЯЗЫКЕ, названия оборудования переведи на русский)
+
+Верни ТОЛЬКО валидный JSON без markdown форматирования. Поля которые не найдены - не включай в ответ или поставь null.`;
+
+    const userMessage = `Компания: ${name}\n${country ? `Страна: ${country}\n` : ''}\n\nПоисковые результаты:\n${context}`;
+
+    try {
+      const response = await fetch(provider.apiEndpoint + '/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: provider.defaultModel,
+          max_tokens: 2000,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`AI API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = (await response.json()) as Record<string, unknown>;
+      const choices = data['choices'] as Array<{ message?: { content?: string } }> | undefined;
+      const aiText = choices?.[0]?.message?.content || '';
+
+      // Parse JSON from AI response
+      let parsedData: Record<string, unknown> = {};
+      try {
+        // Try to extract JSON from response (in case AI added markdown or extra text)
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedData = JSON.parse(jsonMatch[0]);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', parseError);
+        return reply.code(500).send({ error: 'Не удалось обработать ответ AI' });
+      }
+
+      return parsedData;
+    } catch (error) {
+      console.error('AI search error:', error);
+      return reply.code(500).send({ error: 'Ошибка при поиске информации о компании' });
+    }
+  });
+
   // GET /api/knowledge/competitors/:id - получить конкурента по ID
   fastify.get<{ Params: { id: string } }>(
     '/knowledge/competitors/:id',
@@ -496,6 +609,46 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // POST /api/knowledge/competitors/:id/projects - добавить проект к конкуренту
+  fastify.post<{
+    Params: { id: string };
+    Body: {
+      projectId: string;
+      notes?: string;
+    };
+  }>('/knowledge/competitors/:id/projects', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    try {
+      const { projectId, notes } = request.body;
+      if (!projectId) {
+        return reply.code(400).send({ error: 'projectId обязателен' });
+      }
+      const link = await knowledgeBaseService.addCompetitorProject(
+        request.params.id,
+        { projectId, notes }
+      );
+      return reply.code(201).send(link);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Ошибка';
+      return reply.code(400).send({ error: message });
+    }
+  });
+
+  // DELETE /api/knowledge/competitors/:id/projects/:projectId - удалить проект у конкурента
+  fastify.delete<{
+    Params: { id: string; projectId: string };
+  }>('/knowledge/competitors/:id/projects/:projectId', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    try {
+      await knowledgeBaseService.removeCompetitorProject(
+        request.params.id,
+        request.params.projectId
+      );
+      return reply.code(204).send();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Ошибка';
+      return reply.code(400).send({ error: message });
+    }
+  });
+
   // ==========================================
   // CALCULATIONS LIBRARY ROUTES
   // ==========================================
@@ -519,5 +672,12 @@ export async function knowledgeBaseRoutes(fastify: FastifyInstance) {
       page: page ? parseInt(page) : undefined,
       limit: limit ? parseInt(limit) : undefined,
     });
+  });
+
+  // GET /api/knowledge/competitors/for-project/:projectId - получить конкурентов для проекта
+  fastify.get<{
+    Params: { projectId: string };
+  }>('/knowledge/competitors/for-project/:projectId', { preHandler: [fastify.authenticate] }, async (request) => {
+    return knowledgeBaseService.getCompetitorsForProject(request.params.projectId);
   });
 }

@@ -205,7 +205,20 @@ export function AdminPage() {
               Настройки AI
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Провайдер, модель, API ключ (зашифрован)
+              API ключи всех провайдеров (зашифрованы)
+            </p>
+          </Link>
+
+          <Link
+            to="/admin/ai-providers"
+            className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-lg transition-all group"
+          >
+            <div className="text-3xl mb-3">🤖</div>
+            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400">
+              AI Провайдеры
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Fallback, приоритеты, возможности моделей
             </p>
           </Link>
 

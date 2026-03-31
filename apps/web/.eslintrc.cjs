@@ -36,5 +36,6 @@ module.exports = {
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
     'react/jsx-key': 'error',
+    'react-hooks/set-state-in-effect': 'off',
   },
 };

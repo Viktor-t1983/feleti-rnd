@@ -39,6 +39,7 @@ const categoryLabels: Record<string, string> = {
   general: '⚙️ Общие настройки',
   email: '📧 Email',
   security: '🔒 Безопасность',
+  parsers: '🔍 Интеграторы и парсеры',
 };
 
 // Value type labels

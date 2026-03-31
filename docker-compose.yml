@@ -8,7 +8,6 @@ services:
       - .env.production
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: a3f7b2d9e8c1a5f4b6d2e9c8a1f5b3d7
       POSTGRES_DB: feleti_rnd
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -78,8 +77,30 @@ services:
       - feleti-network
     restart: unless-stopped
 
+  # Whoogle - Self-hosted Google search (ENABLED for Belarus server)
+  # Google НЕ заблокирован в Беларуси, работает!
+  whoogle:
+    image: benbusby/whoogle-search:latest
+    container_name: feleti-whoogle
+    ports:
+      - '8081:5000'
+    environment:
+      - WHOOGLE_CONFIG_LANGUAGE=lang_ru
+      - WHOOGLE_CONFIG_SEARCH_LANGUAGE=russian
+      - WHOOGLE_CONFIG_THEME=dark
+      - WHOOGLE_CONFIG_SAFE=off
+    networks:
+      - feleti-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider http://localhost:5000/ || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   postgres_data:
+  searxng_data:
 
 networks:
   feleti-network:

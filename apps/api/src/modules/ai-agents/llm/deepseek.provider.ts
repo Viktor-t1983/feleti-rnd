@@ -25,7 +25,7 @@ export class DeepSeekProvider implements LLMProvider {
       apiKey: config.apiKey,
       baseURL: config.baseURL || 'https://api.deepseek.com',
       maxRetries: config.maxRetries || 3,
-      timeout: config.timeout || 60000,
+      timeout: config.timeout || 300000,
     });
     this.defaultModel = config.defaultModel || 'deepseek-chat';
     this.defaultTemperature = config.defaultTemperature || 0.7;

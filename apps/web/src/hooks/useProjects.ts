@@ -185,3 +185,89 @@ export function useProjectMembers(projectId: string): UseQueryResult<ProjectMemb
     },
   });
 }
+
+/**
+ * Project competitor link type
+ */
+export interface ProjectCompetitor {
+  id: string;
+  projectId: string;
+  competitorId: string;
+  competitor: {
+    id: string;
+    name: string;
+    country: string | null;
+    website: string | null;
+    strengths: string[];
+    weaknesses: string[];
+    productRange: string[];
+  };
+  notes: string | null;
+  createdAt: string;
+}
+
+/**
+ * Get project competitors
+ */
+export function useProjectCompetitors(projectId: string): UseQueryResult<ProjectCompetitor[]> {
+  return useQuery<ProjectCompetitor[]>({
+    queryKey: ['projectCompetitors', projectId],
+    queryFn: async (): Promise<ProjectCompetitor[]> => {
+      const response = await api.get<ProjectCompetitor[]>(`/api/projects/${projectId}/competitors`);
+      return response.data;
+    },
+  });
+}
+
+/**
+ * Add competitor to project mutation
+ */
+export function useAddProjectCompetitor(): UseMutationResult<
+  ProjectCompetitor,
+  unknown,
+  { projectId: string; competitorId: string; notes?: string }
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation<ProjectCompetitor, unknown, { projectId: string; competitorId: string; notes?: string }>({
+    mutationFn: async ({ projectId, competitorId, notes }): Promise<ProjectCompetitor> => {
+      const response = await api.post<ProjectCompetitor>(
+        `/api/projects/${projectId}/competitors`,
+        { competitorId, notes }
+      );
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['projectCompetitors', variables.projectId],
+      });
+    },
+  });
+}
+
+/**
+ * Remove competitor from project mutation
+ */
+export function useRemoveProjectCompetitor(): UseMutationResult<
+  { projectId: string; competitorId: string },
+  unknown,
+  { projectId: string; competitorId: string }
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { projectId: string; competitorId: string },
+    unknown,
+    { projectId: string; competitorId: string }
+  >({
+    mutationFn: async ({ projectId, competitorId }): Promise<{ projectId: string; competitorId: string }> => {
+      await api.delete(`/api/projects/${projectId}/competitors/${competitorId}`);
+      return { projectId, competitorId };
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['projectCompetitors', variables.projectId],
+      });
+    },
+  });
+}

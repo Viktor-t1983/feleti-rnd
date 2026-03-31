@@ -528,38 +528,23 @@ export function AiBlockAssistant({
           }}
           className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
         >
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-stretch">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Введите сообщение..."
-              rows={2}
+              rows={3}
               autoFocus
               className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
-            <button
-              onClick={sendMessage}
-              disabled={!input.trim() || isLoading}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? (
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-              ) : (
+            <div className="flex flex-col gap-2">
+              <button
+                type="submit"
+                disabled={!input.trim() || isLoading}
+                className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Отправить"
+              >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     strokeLinecap="round"
@@ -568,42 +553,35 @@ export function AiBlockAssistant({
                     d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
                   />
                 </svg>
+              </button>
+              
+              {/* 🔍 Кнопка анализа рынка */}
+              <button
+                type="button"
+                onClick={() => setIsMarketResearchOpen(!isMarketResearchOpen)}
+                className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg transition-colors"
+                title="Анализ рынка"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+
+              {/* ✅ Кнопка применения к блоку */}
+              {hasAiResponse && onApplyToBlock && (
+                <button
+                  type="button"
+                  onClick={handleApplyToBlock}
+                  className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  title="Применить к блоку"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </button>
               )}
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            Enter — отправить, Shift+Enter — новая строка
-          </p>
-
-          {/* Подсказка - показываем если есть ответ AI */}
-          {hasAiResponse && (
-            <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <p className="text-xs text-yellow-800 dark:text-yellow-200 text-center">
-                💡 Нажмите <b>"Применить к блоку"</b> чтобы сохранить данные
-              </p>
             </div>
-          )}
-
-          {/* 🔄 Кнопка применения к блоку */}
-          {hasAiResponse && onApplyToBlock && (
-            <button
-              onClick={handleApplyToBlock}
-              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
-            >
-              <span>✅</span>
-              <span>Применить к блоку</span>
-            </button>
-          )}
-
-          {/* 🔍 Кнопка анализа рынка */}
-          <button
-            onClick={() => setIsMarketResearchOpen(!isMarketResearchOpen)}
-            className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg transition-colors text-sm"
-          >
-            <span>🔍</span>
-            <span>Анализ рынка</span>
-            {isMarketResearchOpen ? <span>▲</span> : <span>▼</span>}
-          </button>
+          </div>
         </form>
       </div>
       {/* Оверлей для анализа рынка */}

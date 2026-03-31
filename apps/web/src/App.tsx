@@ -10,6 +10,7 @@ import { queryClient } from './lib/queryClient';
 import { ActivityLogPage } from './pages/ActivityLogPage';
 import { AdminPage } from './pages/AdminPage';
 import AdminSettingsPage from './pages/admin/AdminSettingsPage';
+import AIProvidersPage from './pages/admin/AIProvidersPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -124,6 +125,14 @@ function AppContent(): JSX.Element {
               element={
                 <AdminRoute>
                   <AdminSettingsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/ai-providers"
+              element={
+                <AdminRoute>
+                  <AIProvidersPage />
                 </AdminRoute>
               }
             />

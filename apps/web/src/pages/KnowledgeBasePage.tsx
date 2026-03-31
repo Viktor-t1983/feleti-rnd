@@ -12,6 +12,7 @@ import { api } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { EquipmentModal } from '@/components/knowledge-base/EquipmentModal';
 import { CompetitorModal } from '@/components/knowledge-base/CompetitorModal';
+import { CompetitorDetailModal } from '@/components/knowledge-base/CompetitorDetailModal';
 
 // ==========================================
 // TYPES
@@ -242,6 +243,23 @@ const getThreatLevelColor = (level: string): string => {
 };
 
 // ═══ МЕТОДЫ ДЛЯ МЕДИА ═══
+
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
+    /youtube\.com\/shorts\/([^&\s?]+)/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  return null;
+};
+
+const isYouTubeUrl = (url: string): boolean => {
+  return url?.includes('youtube.com') || url?.includes('youtu.be');
+};
 
 const getProviderIcon = (provider?: string): string => {
   const icons: Record<string, string> = {
@@ -558,6 +576,10 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
   const [attachments, setAttachments] = useState<MediaAttachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [galleryView, setGalleryView] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [addType, setAddType] = useState<'upload' | 'link'>('link');
   const [linkForm, setLinkForm] = useState({
     externalUrl: '',
@@ -649,6 +671,14 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
       if (att.linkProvider === 'network_path') {
         navigator.clipboard.writeText(att.externalUrl);
         toast.success('Путь скопирован в буфер обмена');
+      } else if (att.linkProvider === 'youtube' && isYouTubeUrl(att.externalUrl)) {
+        const embedUrl = getYouTubeEmbedUrl(att.externalUrl);
+        if (embedUrl) {
+          setVideoUrl(embedUrl);
+          setShowVideoModal(true);
+        } else {
+          window.open(att.externalUrl, '_blank');
+        }
       } else {
         window.open(att.externalUrl, '_blank');
       }
@@ -680,6 +710,14 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
           ))}
         </div>
         <div className="flex gap-2">
+          {photos.length > 0 && (
+            <button
+              onClick={() => setGalleryView(!galleryView)}
+              className={`px-3 py-1.5 text-xs rounded ${galleryView ? 'bg-purple-700 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            >
+              {galleryView ? '📋 Список' : '🖼️ Галерея'}
+            </button>
+          )}
           <button
             onClick={() => {
               setShowAddModal(true);
@@ -703,6 +741,59 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
           </button>
         </div>
       </div>
+
+      {/* Gallery View for Photos */}
+      {galleryView && photos.length > 0 && (
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {photos.map((att) => (
+            <div
+              key={att.id}
+              onClick={() => {
+                if (att.sourceType === 'upload') {
+                  setSelectedPhoto(`/api/attachments/${att.id}/download`);
+                } else if (att.externalUrl && att.linkProvider !== 'youtube') {
+                  setSelectedPhoto(att.externalUrl);
+                }
+              }}
+              className="aspect-square bg-slate-800 rounded-lg border border-slate-700 overflow-hidden cursor-pointer hover:border-blue-500 relative group"
+            >
+              {att.sourceType === 'upload' ? (
+                <img
+                  src={`/api/attachments/${att.id}/download`}
+                  alt={att.title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="50%" x="50%" text-anchor="middle" dy=".3em" fill="%236b7280">🖼️</text></svg>';
+                  }}
+                />
+              ) : att.externalUrl ? (
+                <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                  {att.linkProvider === 'youtube' ? (
+                    <span className="text-4xl">▶️</span>
+                  ) : (
+                    <span className="text-4xl">{getProviderIcon(att.linkProvider)}</span>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                  <span className="text-4xl">🖼️</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span className="text-white text-sm font-medium px-2 text-center line-clamp-2">{att.title}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Photo Modal */}
+      {selectedPhoto && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={() => setSelectedPhoto(null)}>
+          <button className="absolute top-4 right-4 text-white text-2xl hover:text-red-400">✕</button>
+          <img src={selectedPhoto} alt="Full size" className="max-w-full max-h-full object-contain" />
+        </div>
+      )}
 
       {/* List */}
       {loading ? (
@@ -958,6 +1049,35 @@ const MediaPanel: React.FC<MediaPanelProps> = ({ entityType, entityId, onClose, 
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Video Modal */}
+      {showVideoModal && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+          <div className="relative w-full max-w-4xl mx-4">
+            <button
+              onClick={() => {
+                setShowVideoModal(false);
+                setVideoUrl('');
+              }}
+              className="absolute -top-10 right-0 text-white text-2xl hover:text-red-400"
+            >
+              ✕
+            </button>
+            <div className="aspect-video bg-black rounded-lg overflow-hidden">
+              {videoUrl && (
+                <iframe
+                  src={videoUrl}
+                  title="Video player"
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1868,6 +1988,7 @@ const CompetitorsTab = () => {
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorItem | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailCompetitorId, setDetailCompetitorId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
@@ -2110,7 +2231,10 @@ const CompetitorsTab = () => {
               <div className="flex items-center gap-3">
                 {getFlagImg(item.countryCode)}
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                  <h3 
+                    onClick={() => setDetailCompetitorId(item.id)}
+                    className="font-semibold text-gray-900 dark:text-white text-lg cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
                     {item.name}
                   </h3>
                   {item.country && (
@@ -2201,7 +2325,14 @@ const CompetitorsTab = () => {
             )}
 
             {/* Кнопки действий */}
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+              <button
+                onClick={() => setDetailCompetitorId(item.id)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors text-sm font-medium"
+              >
+                Подробнее →
+              </button>
+              <div className="flex items-center gap-2">
               <button
                 onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold shadow-sm ${
@@ -2228,6 +2359,7 @@ const CompetitorsTab = () => {
               >
                 <Trash2 className="w-4 h-4" />
               </button>
+              </div>
             </div>
             {expandedId === item.id && (
               <MediaPanel
@@ -2322,6 +2454,21 @@ const CompetitorsTab = () => {
         competitor={selectedCompetitor}
         mode={modalMode}
       />
+
+      {detailCompetitorId && (
+        <CompetitorDetailModal
+          competitorId={detailCompetitorId}
+          onClose={() => setDetailCompetitorId(null)}
+          onEdit={() => {
+            const competitor = data?.items?.find((c: CompetitorItem) => c.id === detailCompetitorId);
+            if (competitor) {
+              setModalMode('edit');
+              setSelectedCompetitor(competitor);
+              setIsModalOpen(true);
+            }
+          }}
+        />
+      )}
     </>
   );
 };
