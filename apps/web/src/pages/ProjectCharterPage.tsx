@@ -580,9 +580,9 @@ export function ProjectCharterPage(): JSX.Element {
                     📝 Заполненные данные
                   </h4>
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-                    {viewBlockData.data.content ? (
+                    {viewBlockData.data['content'] ? (
                       <div className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                        {String(viewBlockData.data.content)}
+                        {String(viewBlockData.data['content'])}
                       </div>
                     ) : (
                       <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">

@@ -295,7 +295,7 @@ export function AiBlockAssistant({
     
     // Если есть флаги - добавляем их
     if (flags.length > 0) {
-      blockContent.risks = flags;
+      blockContent['risks'] = flags;
     }
     
     onApplyToBlock(blockContent);
