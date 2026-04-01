@@ -141,6 +141,7 @@ export class ProjectsService {
           budget: input.budget,
           spent: 0,
           scores: input.scores as Prisma.InputJsonValue,
+          equipmentTypeId: input.equipmentTypeId,
         },
         include: {
           owner: {
@@ -152,6 +153,34 @@ export class ProjectsService {
           },
         },
       });
+
+      // Если указан тип оборудования — создаём блоки устава из шаблонов
+      if (input.equipmentTypeId) {
+        const templateBlocks = await prisma.templateBlock.findMany({
+          where: { equipmentTypeId: input.equipmentTypeId },
+          orderBy: { sortOrder: 'asc' },
+        });
+
+        if (templateBlocks.length > 0) {
+          await prisma.projectBlock.createMany({
+            data: templateBlocks.map((tb) => ({
+              projectId: project.id,
+              templateBlockId: tb.id,
+              data: {},
+              aiHistory: [],
+              aiFlags: [],
+              status: 'EMPTY',
+              updatedBy: project.ownerId,
+            })),
+          });
+
+          logger.info({
+            msg: 'Created project blocks from template',
+            projectId: project.id,
+            blocksCount: templateBlocks.length,
+          });
+        }
+      }
 
       // Отправляем email создателю проекта
       emailService

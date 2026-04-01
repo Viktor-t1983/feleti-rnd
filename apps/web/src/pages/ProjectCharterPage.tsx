@@ -36,10 +36,12 @@ interface ProjectBlock {
 }
 
 interface ProjectCharter {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
+  project: {
+    id: string;
+    name: string;
+    code: string;
+    description: string | null;
+  };
   blocks: ProjectBlock[];
 }
 
@@ -247,6 +249,7 @@ export function ProjectCharterPage(): JSX.Element {
   const [expandedBlock, setExpandedBlock] = useState<string | null>(null);
   const [aiAssistantBlock, setAiAssistantBlock] = useState<ProjectBlock | null>(null);
   const [viewBlockData, setViewBlockData] = useState<ProjectBlock | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Queries
   const { data: charter, isLoading } = useQuery({
@@ -304,6 +307,39 @@ export function ProjectCharterPage(): JSX.Element {
     };
   };
 
+  const handleDownloadPdf = async () => {
+    if (!projectId || !charter) {
+      console.error('Cannot download: projectId=', projectId, 'charter=', charter);
+      toast.error('Ошибка загрузки данных');
+      return;
+    }
+    console.log('Downloading PDF for project:', charter.project.code);
+    setIsDownloading(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/projects/${projectId}/charter/pdf`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to download');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Charter_${charter.project.code}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF скачан');
+    } catch {
+      toast.error('Не удалось скачать PDF');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -324,11 +360,58 @@ export function ProjectCharterPage(): JSX.Element {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
+        <div className="flex items-start justify-between mb-6">
         <PageHeader
           title="📋 Устав проекта"
-          subtitle={`${charter.code} • ${charter.name}`}
-          backTo={`/projects/${projectId}`}
-        />
+          subtitle={`${charter.project.code} • ${charter.project.name}`}
+            backTo={`/projects/${projectId}`}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {isDownloading ? 'Скачивание...' : 'Скачать PDF'}
+            </button>
+            <button
+              onClick={async () => {
+                setIsDownloading(true);
+                try {
+                  const token = localStorage.getItem('accessToken');
+                  const response = await fetch(`/api/projects/${projectId}/charter/docx`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  if (!response.ok) throw new Error('Failed to download');
+                  const blob = await response.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `Charter_${charter.project.code}_${new Date().toISOString().split('T')[0]}.docx`;
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  window.URL.revokeObjectURL(url);
+                  toast.success('Word скачан');
+                } catch {
+                  toast.error('Не удалось скачать Word');
+                } finally {
+                  setIsDownloading(false);
+                }
+              }}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Word
+            </button>
+          </div>
+        </div>
 
         {/* Progress */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -494,8 +577,8 @@ export function ProjectCharterPage(): JSX.Element {
           aiPrompt={aiAssistantBlock.templateBlock.aiPrompt || ''}
           projectContext={JSON.stringify(
             {
-              projectName: charter.name,
-              projectCode: charter.code,
+              projectName: charter.project.name,
+              projectCode: charter.project.code,
               blockData: aiAssistantBlock.data,
             },
             null,

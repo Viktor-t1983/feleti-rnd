@@ -431,7 +431,7 @@ export class KnowledgeBaseService {
     ]);
 
     return {
-      items: items.map(this.mapToMarketListItem),
+      items: items.map((item) => this.mapToMarketListItem(item)),
       total,
       page,
       limit,

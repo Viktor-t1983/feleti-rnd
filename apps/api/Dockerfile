@@ -55,6 +55,9 @@ RUN npx prisma generate
 # Копируем собранное приложение
 COPY --from=builder /app/apps/api/dist ./dist
 
+# Копируем шрифты для PDF
+COPY --from=builder /app/apps/api/fonts ./fonts
+
 # Playwright уже есть в системе
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1

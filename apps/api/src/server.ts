@@ -132,6 +132,9 @@ void fastify.register(aiProviderRoutes, { prefix: '/api' });
 void fastify.register(marketResearchRoutes, { prefix: '/api' });
 void fastify.register(charterRoutes, { prefix: '/api' });
 
+import { equipmentTypesRoutes } from './modules/equipment-types/equipment-types.routes';
+void fastify.register(equipmentTypesRoutes, { prefix: '/api' });
+
 // Health check endpoint
 fastify.get('/health', () => {
   return { status: 'ok' };

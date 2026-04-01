@@ -38,8 +38,12 @@ export function ProjectCreatePage(): JSX.Element {
       const response = await api.post('/api/projects', data);
       return response.data;
     },
-    onSuccess: () => {
-      navigate('/projects');
+    onSuccess: (project) => {
+      if (project?.id) {
+        navigate(`/projects/${project.id}/charter`);
+      } else {
+        navigate('/projects');
+      }
     },
   });
 

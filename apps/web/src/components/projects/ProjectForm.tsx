@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 
 import {
   CreateProjectInput,
@@ -12,6 +13,7 @@ import {
   ProjectStatus,
   UpdateProjectInput,
 } from '../../types/project.types';
+import { api } from '@/lib/api';
 
 // Переводы для стадий проекта
 const stageTranslations: Record<ProjectStage, string> = {
@@ -57,6 +59,7 @@ export function ProjectForm({
         status: initialData?.status || ProjectStatus.ACTIVE,
         priority: initialData?.priority || 'medium',
         ownerId: (initialData as CreateProjectInput)?.ownerId || '',
+        equipmentTypeId: (initialData as CreateProjectInput)?.equipmentTypeId || undefined,
         startDate: initialData?.startDate || '',
         endDate: initialData?.endDate || '',
         targetDate: initialData?.targetDate || '',
@@ -78,6 +81,16 @@ export function ProjectForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Load equipment types for charter blocks creation
+  const { data: equipmentTypes = [] } = useQuery({
+    queryKey: ['equipment-types'],
+    queryFn: async () => {
+      const response = await api.get('/api/equipment-types');
+      return response.data.data || [];
+    },
+    enabled: mode === 'create',
+  });
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -296,6 +309,36 @@ export function ProjectForm({
             <option value="high">Высокий</option>
           </select>
         </div>
+
+        {/* Equipment Type for charter blocks (only in create mode) */}
+        {mode === 'create' && equipmentTypes.length > 0 && (
+          <div>
+            <label
+              htmlFor="equipmentTypeId"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Тип оборудования
+              <span className="ml-2 text-xs text-gray-500">(для создания блоков устава)</span>
+            </label>
+            <select
+              id="equipmentTypeId"
+              value={(formData as CreateProjectInput).equipmentTypeId || ''}
+              onChange={(e) => handleChange('equipmentTypeId', e.target.value || undefined)}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              data-testid="project-equipment-type-select"
+            >
+              <option value="">— Не выбрано —</option>
+              {(equipmentTypes as Array<{ id: string; name: string; code: string }>).map((eq) => (
+                <option key={eq.id} value={eq.id}>
+                  {eq.name} ({eq.code})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              После создания проекта автоматически сгенерируются все блоки устава
+            </p>
+          </div>
+        )}
 
         {/* Dates */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

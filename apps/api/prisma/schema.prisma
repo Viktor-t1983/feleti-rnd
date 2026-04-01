@@ -136,6 +136,9 @@ model Project {
   // Knowledge Base Relations
   equipmentTypes  EquipmentType[] @relation("ProjectEquipment")
   
+  // Equipment Type for charter (nullable, used to create blocks from template)
+  equipmentTypeId String?
+  
   // Charter Relations
   blocks          ProjectBlock[]
 

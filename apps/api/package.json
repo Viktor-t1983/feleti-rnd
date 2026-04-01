@@ -40,6 +40,7 @@
     "nodemailer": "^6.9.15",
     "openai": "^6.22.0",
     "pdfkit": "^0.17.2",
+    "docx": "^9.6.1",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "p-queue": "^8.1.0",

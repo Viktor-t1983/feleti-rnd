@@ -29,6 +29,7 @@ export const createProjectSchema = z.object({
   status: z.nativeEnum(ProjectStatus).optional().default(ProjectStatus.ACTIVE),
   priority: z.enum(['low', 'medium', 'high', 'LOW', 'MEDIUM', 'HIGH']).optional().default('medium'),
   ownerId: z.string().uuid().optional(),
+  equipmentTypeId: z.string().optional(), // код типа оборудования (eq-cutter, eq-vacuum и т.д.)
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
   targetDate: z.coerce.date().optional(),

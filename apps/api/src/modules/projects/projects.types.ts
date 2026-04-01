@@ -102,6 +102,7 @@ export interface CreateProjectInput {
   status?: ProjectStatus;
   priority?: string;
   ownerId: string;
+  equipmentTypeId?: string; // для создания блоков устава
   startDate?: Date;
   endDate?: Date;
   targetDate?: Date;

@@ -247,4 +247,66 @@ export async function charterRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  // Export charter to PDF
+  fastify.get<{
+    Params: { projectId: string };
+  }>(
+    '/projects/:projectId/charter/pdf',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const { projectId } = request.params;
+      
+      try {
+        const pdfBuffer = await charterService.exportCharterToPdf(projectId);
+        
+        const project = await charterService.getProjectCharter(projectId);
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `Charter_${project.project.code}_${date}.pdf`;
+        
+        reply.header('Content-Type', 'application/pdf');
+        reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+        return reply.send(pdfBuffer);
+      } catch (error) {
+        const err = error as Error;
+        logger.error({ projectId, error: err.message }, 'Failed to export charter to PDF');
+        return reply.status(500).send({
+          error: err.message || 'Не удалось экспортировать устав в PDF',
+        });
+      }
+    }
+  );
+
+  // Export charter to DOCX
+  fastify.get<{
+    Params: { projectId: string };
+  }>(
+    '/projects/:projectId/charter/docx',
+    {
+      preHandler: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      const { projectId } = request.params;
+      
+      try {
+        const docxBuffer = await charterService.exportCharterToDocx(projectId);
+        
+        const project = await charterService.getProjectCharter(projectId);
+        const date = new Date().toISOString().split('T')[0];
+        const filename = `Charter_${project.project.code}_${date}.docx`;
+        
+        reply.header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+        return reply.send(docxBuffer);
+      } catch (error) {
+        const err = error as Error;
+        logger.error({ projectId, error: err.message }, 'Failed to export charter to DOCX');
+        return reply.status(500).send({
+          error: err.message || 'Не удалось экспортировать устав в Word',
+        });
+      }
+    }
+  );
 }

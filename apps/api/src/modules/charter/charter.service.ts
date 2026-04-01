@@ -640,6 +640,221 @@ export class CharterService {
     logger.info({ blockId }, 'AI message saved');
     return updated;
   }
+
+  /**
+   * Export project charter to PDF
+   */
+  async exportCharterToPdf(projectId: string): Promise<Buffer> {
+    const PDFDocument = require('pdfkit');
+    const path = require('path');
+    const { project, blocks } = await this.getProjectCharter(projectId);
+
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 50 });
+        const chunks: Buffer[] = [];
+
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        // Register bundled font with Cyrillic support
+        const fontPath = path.join(__dirname, '../../fonts/arial.ttf');
+        doc.registerFont('Arial', fontPath);
+        doc.font('Arial');
+
+        // Header
+        doc.fontSize(24).text('Устав проекта', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).text(`${project.code} - ${project.name}`, { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(10).text(`Дата: ${new Date().toLocaleDateString('ru-RU')}`, { align: 'center' });
+        doc.moveDown(2);
+
+        // Divider
+        doc.strokeColor('#cccccc').lineWidth(1).moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveDown(2);
+
+        // Blocks
+        for (const block of blocks) {
+          const status = block.status === 'DONE' ? '✅' : block.status === 'IN_PROGRESS' ? '⏳' : '⚪';
+          
+          // Block title
+          doc.fontSize(14).fillColor('#333').text(`${status} ${block.templateBlock.name}`);
+          doc.moveDown(0.5);
+
+          // Block status text
+          doc.fontSize(10).fillColor('#666');
+          if (block.status === 'EMPTY') {
+            doc.text('Статус: Не заполнен');
+          } else if (block.status === 'IN_PROGRESS') {
+            doc.text('Статус: В процессе');
+          } else {
+            doc.text('Статус: Завершён');
+          }
+          doc.moveDown(0.5);
+
+          // Block data content
+          const data = block.data as Record<string, unknown>;
+          if (data && Object.keys(data).length > 0) {
+            doc.fontSize(10).fillColor('#000');
+            for (const [key, value] of Object.entries(data)) {
+              if (value && typeof value === 'string' && value.trim()) {
+                doc.text(`${key}: ${value}`);
+              } else if (value && typeof value === 'object') {
+                doc.text(`${key}: ${JSON.stringify(value)}`);
+              }
+            }
+          }
+          doc.moveDown(0.5);
+
+          // AI flags (risks)
+          const flags = block.aiFlags as Array<{ level: string; title: string; text: string }>;
+          if (flags && flags.length > 0) {
+            doc.fontSize(10);
+            for (const flag of flags) {
+              const icon = flag.level === 'red' ? '🚨' : flag.level === 'yellow' ? '⚠️' : '✅';
+              doc.fillColor(flag.level === 'red' ? '#d00' : flag.level === 'yellow' ? '#d70' : '#0a0');
+              doc.text(`${icon} ${flag.title}: ${flag.text}`);
+            }
+          }
+          doc.moveDown(0.5);
+
+          // AI history summary (last 2-3 messages)
+          const history = block.aiHistory as Array<{ role: string; content: string }>;
+          if (history && history.length > 0) {
+            doc.fontSize(9).fillColor('#888');
+            doc.text('Резюме обсуждения:');
+            const recentMessages = history.slice(-3);
+            for (const msg of recentMessages) {
+              const prefix = msg.role === 'user' ? '👤' : '🤖';
+              const content = msg.content.substring(0, 200) + (msg.content.length > 200 ? '...' : '');
+              doc.text(`  ${prefix} ${content}`);
+            }
+          }
+
+          // Check for GO/NO-GO block
+          const blockType = block.templateBlock.blockType;
+          if (blockType === 'GATE_REVIEW') {
+            const goData = data as { decision?: string; notes?: string };
+            if (goData?.decision) {
+              doc.moveDown();
+              doc.fontSize(16).fillColor(goData.decision === 'GO' ? '#0a0' : '#d00');
+              doc.text(`ИТОГОВОЕ РЕШЕНИЕ: ${goData.decision === 'GO' ? '✅ GO' : '❌ NO-GO'}`);
+              if (goData.notes) {
+                doc.fontSize(12).fillColor('#333').text(`Комментарий: ${goData.notes}`);
+              }
+            }
+          }
+
+          doc.moveDown(2);
+
+          // Page break if needed
+          if (doc.y > 650) {
+            doc.addPage();
+          }
+        }
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  async exportCharterToDocx(projectId: string): Promise<Buffer> {
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
+    const { project, blocks } = await this.getProjectCharter(projectId);
+
+    const children: any[] = [];
+
+    children.push(
+      new Paragraph({
+        text: 'Устав проекта',
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+      }),
+      new Paragraph({
+        text: `${project.code} - ${project.name}`,
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+      }),
+      new Paragraph({
+        text: `Дата: ${new Date().toLocaleDateString('ru-RU')}`,
+        alignment: AlignmentType.CENTER,
+      }),
+      new Paragraph({ text: '' })
+    );
+
+    for (const block of blocks) {
+      if (block.status === 'EMPTY') continue;
+
+      const statusText = block.status === 'DONE' ? 'Готово' : block.status === 'IN_PROGRESS' ? 'В процессе' : 'Пустой';
+      
+      children.push(
+        new Paragraph({
+          text: block.templateBlock.name,
+          heading: HeadingLevel.HEADING_2,
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Статус: ${statusText}`, bold: true, size: 20 })],
+        })
+      );
+
+      const data = block.data as Record<string, unknown>;
+      if (data && Object.keys(data).length > 0) {
+        for (const [key, value] of Object.entries(data)) {
+          if (value && typeof value === 'string' && value.trim()) {
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({ text: `${key}: `, bold: true }),
+                  new TextRun(value),
+                ],
+              })
+            );
+          }
+        }
+      }
+
+      const flags = block.aiFlags as Array<{ level: string; title: string; text: string }>;
+      if (flags && flags.length > 0) {
+        for (const flag of flags) {
+          const icon = flag.level === 'red' ? '🚨' : flag.level === 'yellow' ? '⚠️' : '✅';
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: `${icon} ${flag.title}: ${flag.text}`, color: flag.level === 'red' ? 'FF0000' : flag.level === 'yellow' ? 'FFA500' : '00AA00' })],
+            })
+          );
+        }
+      }
+
+      const history = block.aiHistory as Array<{ role: string; content: string }>;
+      if (history && history.length > 0) {
+        children.push(new Paragraph({ children: [new TextRun({ text: 'Резюме обсуждения:', bold: true, italics: true })] }));
+        const recentMessages = history.slice(-3);
+        for (const msg of recentMessages) {
+          const prefix = msg.role === 'user' ? 'Инженер: ' : 'AI: ';
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: prefix + msg.content.substring(0, 200), italics: true, size: 18 })],
+            })
+          );
+        }
+      }
+
+      children.push(new Paragraph({ text: '' }));
+    }
+
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children,
+      }],
+    });
+
+    return Buffer.from(await Packer.toBuffer(doc));
+  }
 }
 
 export const charterService = new CharterService();
