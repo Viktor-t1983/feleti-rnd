@@ -473,7 +473,7 @@ export class CharterService {
       'Ты AI-ассистент для R&D проектов FELETI. Помогай инженеру заполнять устав. Отвечай на русском.';
 
     const contextStr = blockContext ? JSON.stringify(blockContext, null, 2) : '{}';
-    let systemPrompt = `${basePrompt}\n\nКонтекст блока:\n${contextStr}\n\nИспользуй флаги для рисков: FLAG:red:Заголовок:Описание или FLAG:yellow:... или FLAG:green:...`;
+    let systemPrompt = `${basePrompt}\n\nКонтекст блока:\n${contextStr}\n\nВАЖНО: Твой ответ будет отрендерен через Markdown с поддержкой таблиц (GFM). Используй чистое Markdown форматирование:\n- Заголовки через ## (второй уровень)\n- Таблицы через | и ---\n- ВНУТРИ ЯЧЕЕК ТАБЛИЦЫ НЕ ИСПОЛЬЗУЙ <br> И НЕ ИСПОЛЬЗУЙ | КАК РАЗДЕЛИТЕЛЬ — используй перенос строки через простое \\n или нумерацию пунктов (1. текст, 2. текст)\n- Жирный текст через **\n- Списки через - или 1.\n- НЕ используй фразы вроде "Применяю к блоку..." или "Итог для блока:" - сразу структурированный контент.\n\nИспользуй флаги для рисков: FLAG:red:Заголовок:Описание или FLAG:yellow:... или FLAG:green:...`;
     
     // Добавляем контекст из предыдущих блоков устава
     if (charterContext) {
@@ -569,18 +569,29 @@ export class CharterService {
   /**
    * Get full project charter with blocks
    */
-  async getProjectCharter(projectId: string): Promise<{
+  async getProjectCharter(projectIdOrCode: string): Promise<{
     project: Project;
     blocks: Array<ProjectBlock & { templateBlock: TemplateBlock }>;
   }> {
-    logger.debug({ projectId }, 'Getting project charter');
+    logger.debug({ projectId: projectIdOrCode }, 'Getting project charter');
 
     const [project, blocks] = await Promise.all([
       prisma.project.findUnique({
-        where: { id: projectId },
+        where: { id: projectIdOrCode },
       }),
-      this.getProjectBlocks(projectId),
+      this.getProjectBlocks(projectIdOrCode),
     ]);
+
+    // Если не найден по id - пробуем по коду
+    if (!project) {
+      const byCode = await prisma.project.findUnique({
+        where: { code: projectIdOrCode },
+      });
+      if (byCode) {
+        const blocksByCode = await this.getProjectBlocks(byCode.id);
+        return { project: byCode, blocks: blocksByCode };
+      }
+    }
 
     if (!project) {
       throw new Error('Проект не найден');
@@ -642,124 +653,254 @@ export class CharterService {
   }
 
   /**
-   * Export project charter to PDF
+   * Export project charter to PDF using Playwright (beautiful rendering)
    */
   async exportCharterToPdf(projectId: string): Promise<Buffer> {
-    const PDFDocument = require('pdfkit');
-    const path = require('path');
     const { project, blocks } = await this.getProjectCharter(projectId);
 
-    return new Promise((resolve, reject) => {
-      try {
-        const doc = new PDFDocument({ margin: 50 });
-        const chunks: Buffer[] = [];
+    const chromium = require('playwright').chromium;
+    const browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
 
-        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-        doc.on('end', () => resolve(Buffer.concat(chunks)));
-        doc.on('error', reject);
+    const date = new Date().toLocaleDateString('ru-RU');
 
-        // Register bundled font with Cyrillic support
-        const fontPath = path.join(__dirname, '../../fonts/arial.ttf');
-        doc.registerFont('Arial', fontPath);
-        doc.font('Arial');
+    // Generate HTML with proper styling
+    let blocksHtml = '';
+    for (const block of blocks) {
+      const statusEmoji = block.status === 'DONE' ? '✅' : block.status === 'IN_PROGRESS' ? '⏳' : '⚪';
+      const statusText = block.status === 'DONE' ? 'Завершён' : block.status === 'IN_PROGRESS' ? 'В процессе' : 'Не заполнен';
+      
+      const data = block.data as Record<string, unknown>;
+      const content = data['content'] as string | undefined;
+      const risks = data['risks'] as Array<{ level: string; title: string; text: string }> | undefined;
+      const aiFlags = block.aiFlags as Array<{ level: string; title: string; text: string }>;
 
-        // Header
-        doc.fontSize(24).text('Устав проекта', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(16).text(`${project.code} - ${project.name}`, { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(10).text(`Дата: ${new Date().toLocaleDateString('ru-RU')}`, { align: 'center' });
-        doc.moveDown(2);
-
-        // Divider
-        doc.strokeColor('#cccccc').lineWidth(1).moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-        doc.moveDown(2);
-
-        // Blocks
-        for (const block of blocks) {
-          const status = block.status === 'DONE' ? '✅' : block.status === 'IN_PROGRESS' ? '⏳' : '⚪';
-          
-          // Block title
-          doc.fontSize(14).fillColor('#333').text(`${status} ${block.templateBlock.name}`);
-          doc.moveDown(0.5);
-
-          // Block status text
-          doc.fontSize(10).fillColor('#666');
-          if (block.status === 'EMPTY') {
-            doc.text('Статус: Не заполнен');
-          } else if (block.status === 'IN_PROGRESS') {
-            doc.text('Статус: В процессе');
-          } else {
-            doc.text('Статус: Завершён');
-          }
-          doc.moveDown(0.5);
-
-          // Block data content
-          const data = block.data as Record<string, unknown>;
-          if (data && Object.keys(data).length > 0) {
-            doc.fontSize(10).fillColor('#000');
-            for (const [key, value] of Object.entries(data)) {
-              if (value && typeof value === 'string' && value.trim()) {
-                doc.text(`${key}: ${value}`);
-              } else if (value && typeof value === 'object') {
-                doc.text(`${key}: ${JSON.stringify(value)}`);
-              }
-            }
-          }
-          doc.moveDown(0.5);
-
-          // AI flags (risks)
-          const flags = block.aiFlags as Array<{ level: string; title: string; text: string }>;
-          if (flags && flags.length > 0) {
-            doc.fontSize(10);
-            for (const flag of flags) {
-              const icon = flag.level === 'red' ? '🚨' : flag.level === 'yellow' ? '⚠️' : '✅';
-              doc.fillColor(flag.level === 'red' ? '#d00' : flag.level === 'yellow' ? '#d70' : '#0a0');
-              doc.text(`${icon} ${flag.title}: ${flag.text}`);
-            }
-          }
-          doc.moveDown(0.5);
-
-          // AI history summary (last 2-3 messages)
-          const history = block.aiHistory as Array<{ role: string; content: string }>;
-          if (history && history.length > 0) {
-            doc.fontSize(9).fillColor('#888');
-            doc.text('Резюме обсуждения:');
-            const recentMessages = history.slice(-3);
-            for (const msg of recentMessages) {
-              const prefix = msg.role === 'user' ? '👤' : '🤖';
-              const content = msg.content.substring(0, 200) + (msg.content.length > 200 ? '...' : '');
-              doc.text(`  ${prefix} ${content}`);
-            }
-          }
-
-          // Check for GO/NO-GO block
-          const blockType = block.templateBlock.blockType;
-          if (blockType === 'GATE_REVIEW') {
-            const goData = data as { decision?: string; notes?: string };
-            if (goData?.decision) {
-              doc.moveDown();
-              doc.fontSize(16).fillColor(goData.decision === 'GO' ? '#0a0' : '#d00');
-              doc.text(`ИТОГОВОЕ РЕШЕНИЕ: ${goData.decision === 'GO' ? '✅ GO' : '❌ NO-GO'}`);
-              if (goData.notes) {
-                doc.fontSize(12).fillColor('#333').text(`Комментарий: ${goData.notes}`);
-              }
-            }
-          }
-
-          doc.moveDown(2);
-
-          // Page break if needed
-          if (doc.y > 650) {
-            doc.addPage();
-          }
-        }
-
-        doc.end();
-      } catch (error) {
-        reject(error);
+      // Parse simple Markdown for HTML
+      let contentHtml = '';
+      if (content) {
+        contentHtml = this.parseSimpleMarkdown(content);
       }
+
+      // Risks/flags
+      let flagsHtml = '';
+      const allFlags = [...(risks || []), ...(aiFlags || [])];
+      if (allFlags.length > 0) {
+        flagsHtml = '<div class="flags">';
+        for (const flag of allFlags) {
+          const icon = flag.level === 'red' ? '🚨' : flag.level === 'yellow' ? '⚠️' : '✅';
+          const color = flag.level === 'red' ? '#dc2626' : flag.level === 'yellow' ? '#d97706' : '#16a34a';
+          flagsHtml += `<div class="flag" style="color: ${color}">${icon} <strong>${flag.title}:</strong> ${flag.text}</div>`;
+        }
+        flagsHtml += '</div>';
+      }
+
+      blocksHtml += `
+        <div class="block">
+          <div class="block-header">
+            <span class="status">${statusEmoji}</span>
+            <h2>${block.templateBlock.name}</h2>
+            <span class="status-text">${statusText}</span>
+          </div>
+          ${contentHtml ? `<div class="content">${contentHtml}</div>` : ''}
+          ${flagsHtml}
+        </div>
+      `;
+    }
+
+    const html = `
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Устав проекта ${project.code}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a; 
+      color: #f1f5f9; 
+      padding: 40px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #334155; padding-bottom: 20px; }
+    .header h1 { font-size: 28px; color: #f1f5f9; margin-bottom: 8px; }
+    .header .subtitle { font-size: 16px; color: #94a3b8; }
+    .header .date { font-size: 12px; color: #64748b; margin-top: 8px; }
+    
+    .block { 
+      background: #1e293b; 
+      border-radius: 8px; 
+      padding: 20px; 
+      margin-bottom: 20px;
+      border: 1px solid #334155;
+    }
+    .block-header { 
+      display: flex; 
+      align-items: center; 
+      gap: 10px; 
+      margin-bottom: 16px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 12px;
+    }
+    .block-header .status { font-size: 20px; }
+    .block-header h2 { font-size: 16px; color: #f1f5f9; flex: 1; }
+    .block-header .status-text { font-size: 11px; color: #64748b; }
+    
+    .content { font-size: 12px; line-height: 1.6; }
+    .content h1 { font-size: 22px; color: #f1f5f9; margin: 16px 0 12px; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+    .content h2 { font-size: 18px; color: #f1f5f9; margin: 14px 0 10px; }
+    .content h3 { font-size: 14px; color: #e2e8f0; margin: 12px 0 8px; font-weight: 600; }
+    .content p { margin: 8px 0; color: #cbd5e1; }
+    .content ul, .content ol { margin: 8px 0; padding-left: 24px; color: #cbd5e1; }
+    .content li { margin: 4px 0; }
+    .content strong { color: #f1f5f9; font-weight: 600; }
+    .content em { color: #94a3b8; font-style: italic; }
+    .content code { background: #0f172a; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #f1f5f9; }
+    .content hr { border: none; border-top: 1px solid #334155; margin: 16px 0; }
+    
+    .content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11px; }
+    .content th { background: #0f172a; border: 1px solid #475569; padding: 8px; text-align: left; color: #e2e8f0; font-weight: 600; }
+    .content td { border: 1px solid #475569; padding: 8px; color: #cbd5e1; }
+    .content tr:nth-child(even) td { background: #0f172a; }
+    
+    .flags { margin-top: 12px; }
+    .flag { font-size: 11px; margin: 4px 0; }
+    
+    @media print {
+      body { background: white; color: black; }
+      .block { background: #f8fafc; border: 1px solid #cbd5e1; }
+      .content h1, .content h2, .content h3, .content strong { color: black; }
+      .content p, .content li, .content td { color: #333; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📋 Устав проекта</h1>
+    <div class="subtitle">${project.code} - ${project.name}</div>
+    <div class="date">Дата: ${date}</div>
+  </div>
+  ${blocksHtml}
+</body>
+</html>`;
+
+    await page.setContent(html, { waitUntil: 'networkidle' });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
     });
+
+    await browser.close();
+    return Buffer.from(pdfBuffer);
+  }
+
+  /**
+   * Simple Markdown to HTML parser
+   */
+  private parseSimpleMarkdown(text: string): string {
+    if (!text) return '';
+    
+    let html = text;
+    
+    // First, protect <br> tags from escaping
+    html = html.replace(/<br\s*\/?>/gi, '___BR___');
+    
+    // NEW: Clean up tables - fix broken tables where newlines inside cells broke the format
+    // Find table rows that got split by newlines and merge them
+    const tableLines = html.split('\n');
+    let inTable = false;
+    const fixedLines: string[] = [];
+    let tableBuffer = '';
+    
+    for (const line of tableLines) {
+      if (!line) continue;
+      
+      // Detect start of table
+      if (line.startsWith('|') && !line.match(/^[\s|:-]+$/)) {
+        inTable = true;
+        tableBuffer = line;
+      } 
+      // Still in table (next line starts with | but isn't separator)
+      else if (inTable && line.startsWith('|') && !line.match(/^[\s|:-]+$/)) {
+        tableBuffer += '\n' + line;
+      }
+      // End of table (separator line)
+      else if (inTable && line.match(/^[\s|:-]+$/)) {
+        tableBuffer += '\n' + line;
+      }
+      // Not a table row anymore
+      else if (inTable) {
+        // Flush the table buffer
+        fixedLines.push(tableBuffer);
+        tableBuffer = '';
+        inTable = false;
+        fixedLines.push(line);
+      }
+      else {
+        fixedLines.push(line);
+      }
+    }
+    if (tableBuffer) fixedLines.push(tableBuffer);
+    
+    html = fixedLines.join('\n');
+    
+    // Escape HTML (but not our protected br tags)
+    html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    // Restore <br> tags
+    html = html.replace(/___BR___/g, '<br>');
+    
+    // Headers
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    
+    // Bold and italic
+    html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    
+    // Code blocks
+    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    // Horizontal rule
+    html = html.replace(/^---$/gm, '<hr>');
+    
+    // Tables (simple)
+    const tableRegex = /\|(.+)\|\n\|([-:\s]+)\|\n((?:\|.+\|\n?)+)/g;
+    html = html.replace(tableRegex, (_match, header, _separator, body) => {
+      const headers = header.split('|').filter((h: string) => h.trim()).map((h: string) => `<th>${h.trim()}</th>`).join('');
+      const rows = body.trim().split('\n').map((row: string) => {
+        const cells = row.split('|').filter((c: string) => c.trim()).map((c: string) => `<td>${c.trim()}</td>`).join('');
+        return `<tr>${cells}</tr>`;
+      }).join('');
+      return `<table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+    });
+    
+    // Lists
+    html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+    
+    // Numbered lists
+    html = html.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+    
+    // Line breaks
+    html = html.replace(/\n\n/g, '</p><p>');
+    html = `<p>${html}</p>`;
+    html = html.replace(/<p><\/p>/g, '');
+    html = html.replace(/<p>(<h[123]>)/g, '$1');
+    html = html.replace(/(<\/h[123]>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<ul>)/g, '$1');
+    html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<table>)/g, '$1');
+    html = html.replace(/(<\/table>)<\/p>/g, '$1');
+    html = html.replace(/<p>(<hr>)<\/p>/g, '$1');
+    
+    return html;
   }
 
   async exportCharterToDocx(projectId: string): Promise<Buffer> {

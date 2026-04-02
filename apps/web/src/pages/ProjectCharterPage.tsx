@@ -8,6 +8,13 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
+// @ts-ignore - react-markdown and plugins installed in container
+import ReactMarkdown from 'react-markdown';
+// @ts-ignore
+import remarkGfm from 'remark-gfm';
+// @ts-ignore
+import rehypeRaw from 'rehype-raw';
+
 import { AiBlockAssistant } from '@/components/AiBlockAssistant';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { api } from '@/lib/api';
@@ -117,6 +124,13 @@ function BlockDataView({ data }: { data: Record<string, unknown> }) {
     );
   }
 
+  // Если есть поле content - показываем его через Markdown с таблицами
+  const content = data['content'];
+  const otherData = Object.fromEntries(
+    Object.entries(data).filter(([key]) => key !== 'content' && key !== 'risks')
+  );
+  const hasOtherData = Object.keys(otherData).length > 0;
+
   // Словарь для перевода ключей на русский
   const keyLabels: Record<string, string> = {
     product: 'Продукт',
@@ -204,41 +218,122 @@ function BlockDataView({ data }: { data: Record<string, unknown> }) {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-      {Object.entries(data)
-        .filter(([key]) => keyLabels[key] !== null && key !== 'status')
-        .map(([key, value]) => (
-          <div
-            key={key}
-            style={{
-              background: '#0f172a',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              borderLeft: '3px solid #334155',
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Content из AI - отображаем через Markdown */}
+      {content && typeof content === 'string' && (
+        <div
+          style={{
+            background: '#0f172a',
+            borderRadius: '8px',
+            padding: '16px',
+            border: '1px solid #334155',
+            overflow: 'hidden',
+          }}
+        >
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeRaw]}
+            components={{
+              h1: ({ children }) => (
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#f1f5f9', marginTop: '16px', marginBottom: '12px', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>{children}</h1>
+              ),
+              h2: ({ children }) => (
+                <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#f1f5f9', marginTop: '14px', marginBottom: '10px' }}>{children}</h2>
+              ),
+              h3: ({ children }) => (
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#e2e8f0', marginTop: '12px', marginBottom: '8px' }}>{children}</h3>
+              ),
+              p: ({ children }) => (
+                <p style={{ fontSize: '14px', color: '#cbd5e1', marginTop: '8px', marginBottom: '8px', lineHeight: '1.6' }}>{children}</p>
+              ),
+              ul: ({ children }) => (
+                <ul style={{ fontSize: '14px', color: '#cbd5e1', marginTop: '8px', marginBottom: '8px', paddingLeft: '24px', listStyleType: 'disc' }}>{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol style={{ fontSize: '14px', color: '#cbd5e1', marginTop: '8px', marginBottom: '8px', paddingLeft: '24px', listStyleType: 'decimal' }}>{children}</ol>
+              ),
+              li: ({ children }) => (
+                <li style={{ marginTop: '4px', marginBottom: '4px' }}>{children}</li>
+              ),
+              table: ({ children }) => (
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', marginBottom: '12px', fontSize: '13px' }}>{children}</table>
+              ),
+              thead: ({ children }) => (
+                <thead style={{ background: '#1e293b' }}>{children}</thead>
+              ),
+              th: ({ children }) => (
+                <th style={{ border: '1px solid #475569', padding: '10px', textAlign: 'left', color: '#e2e8f0', fontWeight: '600', background: '#1e293b' }}>{children}</th>
+              ),
+              td: ({ children }) => (
+                <td style={{ border: '1px solid #475569', padding: '8px', color: '#cbd5e1' }}>{children}</td>
+              ),
+              tr: ({ children }) => (
+                <tr style={{ background: '#0f172a' }}>{children}</tr>
+              ),
+              tbody: ({ children }) => (
+                <tbody>{children}</tbody>
+              ),
+              strong: ({ children }) => (
+                <strong style={{ fontWeight: 'bold', color: '#f1f5f9' }}>{children}</strong>
+              ),
+              em: ({ children }) => (
+                <em style={{ fontStyle: 'italic', color: '#94a3b8' }}>{children}</em>
+              ),
+              code: ({ children }) => (
+                <code style={{ background: '#1e293b', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', fontSize: '13px', color: '#f1f5f9' }}>{children}</code>
+              ),
+              hr: () => (
+                <hr style={{ border: 'none', borderTop: '1px solid #334155', marginTop: '16px', marginBottom: '16px' }} />
+              ),
+              a: ({ href, children }) => (
+                <a href={href} style={{ color: '#3b82f6', textDecoration: 'underline' }}>{children}</a>
+              ),
             }}
           >
-            <div
-              style={{
-                fontSize: '10px',
-                color: '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-              }}
-            >
-              {keyLabels[key] || key}
-            </div>
-            <div
-              style={{
-                fontSize: '13px',
-                color: '#f1f5f9',
-                marginTop: '2px',
-                fontWeight: 600,
-              }}
-            >
-              {String(value)}
-            </div>
-          </div>
-        ))}
+            {content}
+          </ReactMarkdown>
+        </div>
+      )}
+
+      {/* Остальные поля в две колонки */}
+      {hasOtherData && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+          {Object.entries(otherData)
+            .filter(([key]) => keyLabels[key] !== null && key !== 'status')
+            .map(([key, value]) => (
+              <div
+                key={key}
+                style={{
+                  background: '#0f172a',
+                  borderRadius: '6px',
+                  padding: '8px 12px',
+                  borderLeft: '3px solid #334155',
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: '#64748b',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                  }}
+                >
+                  {keyLabels[key] || key}
+                </div>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    color: '#f1f5f9',
+                    marginTop: '2px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {String(value)}
+                </div>
+              </div>
+            ))}
+        </div>
+      )}
     </div>
   );
 }

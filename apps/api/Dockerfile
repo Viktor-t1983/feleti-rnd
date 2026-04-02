@@ -24,7 +24,7 @@ RUN cd apps/api && npm run build
 # ==========================================
 # Production stage (Playwright + Chromium)
 # ==========================================
-FROM mcr.microsoft.com/playwright:v1.58.2-jammy AS production
+FROM mcr.microsoft.com/playwright:v1.59.1-jammy AS production
 
 WORKDIR /app
 
