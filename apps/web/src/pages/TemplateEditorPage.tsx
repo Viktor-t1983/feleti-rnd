@@ -6,9 +6,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 import { api } from '@/lib/api';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { EquipmentTypeWizard } from '@/components/admin/EquipmentTypeWizard';
+import { SortableBlock } from '@/components/admin/SortableBlock';
 
 // Types
 interface EquipmentType {
@@ -40,6 +57,10 @@ const BLOCK_TYPE_OPTIONS = [
   { value: 'GATE_REVIEW', label: 'Ворота решений GO/NO-GO' },
 ];
 
+const deleteEquipmentType = async (id: string) => {
+  await api.delete(`/api/admin/equipment-types/${id}`);
+};
+
 // API functions
 const fetchEquipmentTypes = async (): Promise<EquipmentType[]> => {
   const { data } = await api.get('/api/admin/equipment-types');
@@ -70,6 +91,7 @@ export function TemplateEditorPage(): JSX.Element {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState<string>('');
   const [editingBlock, setEditingBlock] = useState<TemplateBlock | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isCreatingType, setIsCreatingType] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<Partial<TemplateBlock>>({
@@ -77,6 +99,7 @@ export function TemplateEditorPage(): JSX.Element {
     icon: '',
     description: '',
     blockType: 'TEXT',
+    sortOrder: 0,
     isRequired: true,
     aiEnabled: true,
     aiPrompt: '',
@@ -126,6 +149,65 @@ export function TemplateEditorPage(): JSX.Element {
     onError: () => toast.error('Ошибка удаления блока'),
   });
 
+  // Reorder mutation - обновляет порядок всех блоков
+  const reorderMutation = useMutation({
+    mutationFn: async (reorderedBlocks: Array<{ id: string; sortOrder: number }>) => {
+      // Обновляем каждый блок по порядку
+      for (let i = 0; i < reorderedBlocks.length; i++) {
+        const block = reorderedBlocks[i];
+        if (block) {
+          await updateTemplateBlock(block.id, { sortOrder: i });
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['template-blocks', selectedEquipmentId] });
+      toast.success('Порядок блоков обновлён');
+    },
+    onError: () => toast.error('Ошибка обновления порядка'),
+  });
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !blocks) return;
+
+    const oldIndex = blocks.findIndex((b) => b.id === active.id);
+    const newIndex = blocks.findIndex((b) => b.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reorderedBlocks = arrayMove(
+        blocks.sort((a, b) => a.sortOrder - b.sortOrder),
+        oldIndex,
+        newIndex
+      );
+
+      // Обновляем порядок в БД
+      reorderMutation.mutate(
+        reorderedBlocks.map((b) => ({ id: b.id, sortOrder: 0 }))
+      );
+    }
+  };
+
+  const deleteEquipmentTypeMutation = useMutation({
+    mutationFn: deleteEquipmentType,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['equipment-types'] });
+      setSelectedEquipmentId('');
+      toast.success('Тип оборудования удалён');
+    },
+    onError: () => toast.error('Ошибка удаления типа оборудования'),
+  });
+
   const resetForm = () => {
     setEditingBlock(null);
     setIsCreating(false);
@@ -134,6 +216,7 @@ export function TemplateEditorPage(): JSX.Element {
       icon: '',
       description: '',
       blockType: 'TEXT',
+      sortOrder: 0,
       isRequired: true,
       aiEnabled: true,
       aiPrompt: '',
@@ -146,7 +229,7 @@ export function TemplateEditorPage(): JSX.Element {
     if (editingBlock) {
       updateMutation.mutate({ id: editingBlock.id, block: formData });
     } else {
-      createMutation.mutate({ ...formData, sortOrder: blocks?.length || 0 });
+      createMutation.mutate(formData);
     }
   };
 
@@ -158,6 +241,7 @@ export function TemplateEditorPage(): JSX.Element {
       icon: block.icon,
       description: block.description || '',
       blockType: block.blockType,
+      sortOrder: block.sortOrder,
       isRequired: block.isRequired,
       aiEnabled: block.aiEnabled,
       aiPrompt: block.aiPrompt || '',
@@ -183,31 +267,52 @@ export function TemplateEditorPage(): JSX.Element {
           {/* Left sidebar - Equipment types */}
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Типы оборудования
                 </h2>
+                <button
+                  onClick={() => setIsCreatingType(true)}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                >
+                  + Новый тип
+                </button>
               </div>
               <div className="p-2 max-h-[600px] overflow-y-auto">
                 {isLoadingEquipment ? (
                   <div className="p-4 text-center text-gray-500">Загрузка...</div>
                 ) : (
                   equipmentTypes?.map((eq) => (
-                    <button
+                    <div
                       key={eq.id}
-                      onClick={() => {
-                        setSelectedEquipmentId(eq.id);
-                        resetForm();
-                      }}
                       className={`w-full text-left p-3 rounded-lg mb-1 transition-colors ${
                         selectedEquipmentId === eq.id
                           ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
                           : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                       }`}
                     >
-                      <div className="font-medium text-gray-900 dark:text-white">{eq.name}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">{eq.code}</div>
-                    </button>
+                      <button
+                        onClick={() => {
+                          setSelectedEquipmentId(eq.id);
+                          resetForm();
+                        }}
+                        className="flex-1 text-left"
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white">{eq.name}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{eq.code}</div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Удалить тип оборудования "${eq.name}"? Это также удалит все связанные блоки.`)) {
+                            deleteEquipmentTypeMutation.mutate(eq.id);
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-700 text-lg ml-2 p-1"
+                        title="Удалить тип оборудования"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   ))
                 )}
               </div>
@@ -250,7 +355,19 @@ export function TemplateEditorPage(): JSX.Element {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Порядок
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.sortOrder}
+                        onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        min="0"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Иконка (emoji)
@@ -384,65 +501,39 @@ export function TemplateEditorPage(): JSX.Element {
                       Нет блоков. Нажмите &quot;Добавить блок&quot; чтобы создать.
                     </div>
                   ) : (
-                    blocks?.map((block, index) => (
-                      <div
-                        key={block.id}
-                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-start gap-4"
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={blocks?.map(b => b.id) || []}
+                        strategy={verticalListSortingStrategy}
                       >
-                        <div className="text-2xl">{block.icon || '📄'}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900 dark:text-white">
-                              {index + 1}. {block.name}
-                            </span>
-                            {block.isRequired && (
-                              <span className="text-xs px-2 py-0.5 bg-red-100 text-red-800 rounded-full">
-                                Обязательный
-                              </span>
-                            )}
-                            {block.aiEnabled && (
-                              <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">
-                                AI
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {getBlockTypeLabel(block.blockType)}
-                          </div>
-                          {block.description && (
-                            <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                              {block.description}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(block)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
-                            title="Редактировать"
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('Удалить этот блок?')) {
-                                deleteMutation.mutate(block.id);
-                              }
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
-                            title="Удалить"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                    ))
+                        {blocks?.sort((a, b) => a.sortOrder - b.sortOrder).map((block, index) => (
+                          <SortableBlock
+                            key={block.id}
+                            block={block}
+                            index={index}
+                            onEdit={handleEdit}
+                            onDelete={(id) => deleteMutation.mutate(id)}
+                            getBlockTypeLabel={getBlockTypeLabel}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
                   )}
                 </div>
               </div>
             )}
           </div>
         </div>
+
+        <EquipmentTypeWizard
+          isOpen={isCreatingType}
+          onClose={() => setIsCreatingType(false)}
+          onSuccess={(id) => setSelectedEquipmentId(id)}
+        />
       </div>
     </div>
   );

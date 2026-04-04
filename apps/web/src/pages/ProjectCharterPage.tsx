@@ -125,7 +125,7 @@ function BlockDataView({ data }: { data: Record<string, unknown> }) {
   }
 
   // Если есть поле content - показываем его через Markdown с таблицами
-  const content = data['content'];
+  const content = data['content'] as string | undefined;
   const otherData = Object.fromEntries(
     Object.entries(data).filter(([key]) => key !== 'content' && key !== 'risks')
   );

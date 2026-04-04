@@ -141,7 +141,9 @@ export class ProjectsService {
           budget: input.budget,
           spent: 0,
           scores: input.scores as Prisma.InputJsonValue,
-          equipmentTypeId: input.equipmentTypeId,
+          equipmentTypes: input.equipmentTypeId ? {
+            connect: { id: input.equipmentTypeId }
+          } : undefined,
         },
         include: {
           owner: {
@@ -204,7 +206,7 @@ export class ProjectsService {
         })
         .catch((err) => logger.warn({ msg: 'Activity log failed', error: err }));
 
-      return project as ProjectListItem;
+      return project as unknown as ProjectListItem;
     } catch (error: unknown) {
       if (error instanceof Error && 'code' in error && error.code === 'P2002') {
         throw new ConflictError('Project code already exists');
